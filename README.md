@@ -22,7 +22,7 @@ Classical.js is an adaptation of classical programming languages (PHP, C#, C++, 
   End()
 
   var me = new Person();
-  me.setFirstName("Rodric");
+  me.setFirstName("Rody");
   me.setLastName("Haddad");
   
   console.log(me.getFullName());
