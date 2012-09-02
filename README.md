@@ -12,11 +12,11 @@ Classical.js is an adaptation of classical programming languages (PHP, C#, C++, 
       return this.firstName + " " + this.lastName;
     });
     
-    Public (setFirstName(firstName){
+    Public (function setFirstName(firstName){
       this.firstName = firstName;
     });
     
-    Public (setLastName(lastName){
+    Public (function setLastName(lastName){
       this.lastName = lastName;
     });
   End()
