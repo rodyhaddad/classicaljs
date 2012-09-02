@@ -5,5 +5,25 @@ Classical.js is an adaptation of classical programming languages (PHP, C#, C++, 
 
 ### Usage
   ```
+  Class("Person")
+    Private("firstName", "lastName");
+    
+    Public(function getFullName(){
+      return this.firstName + " " + this.lastName;
+    });
+    
+    Public (setFirstName(firstName){
+      this.firstName = firstName;
+    });
+    
+    Public (setLastName(lastName){
+      this.lastName = lastName;
+    });
+  End()
+
+  var me = new Person();
+  me.setFirstName("Rodric");
+  me.setLastName("Haddad");
   
+  console.log(me.getFullName());
   ```
