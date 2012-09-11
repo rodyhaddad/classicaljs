@@ -1,29 +1,60 @@
-Classical.js
-===========
+# Classical.js
 
-Classical.js is an adaptation of classical programming languages (PHP, C#, C++, Java) behaviours in JavaScript, without any emulation, parsing or compiling.
 
-### Usage
-  ```
-  Class("Person")
-    Private("firstName", "lastName");
+Classical.js is an adaptation of the OOP concepts of classical programming languages (PHP, C#, C++, Java) behaviours in JavaScript, without any emulation, parsing or compiling.
+
+## Usage
+  ```javascript
+  
+  var Person = Class("Person")
+  
+    Private ("firstName");
+    Private ("LastName");
+    
+    Public (function setFirstName(firstName){
+      this.firstName = firstName;
+    });
+
+    Public (function setLastName(lastName){
+      this.lastName = lastName;
+    });
     
     Public(function getFullName(){
       return this.firstName + " " + this.lastName;
     });
     
-    Public (function setFirstName(firstName){
-      this.firstName = firstName;
-    });
-    
-    Public (function setLastName(lastName){
-      this.lastName = lastName;
-    });
   End()
 
-  var me = new Person();
+  
+  var Programmer = Class("Programmer").Extends("Person")
+  
+    Private ("knownProgrammingLanguages");
+    
+    Constructor (function(){
+        this.knownProgrammingLanguages = [];
+    })
+    
+    Public (function addKnownLanguage(languageName){
+      this.knownProgrammingLanguages.push(languageName);
+    })
+    
+    Public (function resumé(){
+        return this.getFullName() + " knows the following languages: " + this.knownProgrammingLanguages.join(", ");
+    })
+    
+  End()
+
+  var me = new Programmer();
+  
   me.setFirstName("Rody");
   me.setLastName("Haddad");
   
-  console.log(me.getFullName());
+  me.addKnownLanguage("HTML");
+  me.addKnownLanguage("CSS");
+  me.addKnownLanguage("JavaScript");
+  me.addKnownLanguage("PHP");
+  
+  console.log(me.resumé()); //Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
   ```
+
+I'm currently working on writing the complete documentation in this Repository's Wiki (just click above on "Wiki" to see the progress :) )
