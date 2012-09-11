@@ -38,7 +38,7 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
       this.knownProgrammingLanguages.push(languageName);
     })
     
-    Public (function resumé(){
+    Public (function summary(){
         return this.getFullName() + " knows the following languages: " + this.knownProgrammingLanguages.join(", ");
     })
     
@@ -54,7 +54,7 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
   me.addKnownLanguage("JavaScript");
   me.addKnownLanguage("PHP");
   
-  console.log(me.resumé()); //Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
+  console.log(me.summary()); //Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
   ```
 
 I'm currently working on writing the complete documentation in this Repository's Wiki (just click above on "Wiki" to see the progress :) )
