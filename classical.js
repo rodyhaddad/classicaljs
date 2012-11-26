@@ -65,10 +65,10 @@
             PrivateFn: makeInherit(globalConfig.persistentPlugins.PrivateFn),
             ProtectedFn: makeInherit(globalConfig.persistentPlugins.ProtectedFn),
             PublicFn: makeInherit(globalConfig.persistentPlugins.PublicFn)
-        }
+        };
         
         
-        this.Config(classConfig || {})
+        this.Config(classConfig || {});
         
         
         this._queuedPlugins = {};
@@ -101,32 +101,8 @@
         var self = this;
         function aClassConstructor(){
         
+            return self.onCallClassConstructor.call(this, objToArray(arguments));
             
-            var publicObj = self._Build().publicObj;
-            
-            
-            var instance = makeInherit(publicObj);
-            
-            
-            instance._Class = self;
-            
-            
-            if(instance[self._config.constructorName]){
-                
-                var constructorResult = instance[self._config.constructorName].apply({}, objToArray(arguments)); 
-                
-                
-                if(typeof constructorResult === "object"){
-                    
-                    return constructorResult;
-                }else{
-                    
-                    return instance;
-                }
-            }else{
-                
-                return instance;
-            }
         }
         
         
@@ -172,7 +148,7 @@
         if(typeof pluginInfo.onDefinition === "function" || typeof pluginInfo.onInstanceCreation === "function"){
 
             
-            pluginInfo.chainName = pluginInfo.chainName || pluginInfo.name
+            pluginInfo.chainName = pluginInfo.chainName || pluginInfo.name;
             
             
             Class.functionsToExport.push(pluginInfo.chainName);
@@ -185,13 +161,13 @@
                         pluginInfo.priority = pluginPriority[pluginInfo.priority];
                     }else{
                         
-                        throw "The plugin '"+pluginInfo.name+"' has the priority '"+pluginInfo.priority+"' which is not defined"
+                        throw "The plugin '"+pluginInfo.name+"' has the priority '"+pluginInfo.priority+"' which is not defined";
                     }
                 }
                 
                 
                 Class.prototype[pluginInfo.chainName] = function(deleted){
-                    var pluginList, args = objToArray(arguments)
+                    var pluginList, args = objToArray(arguments);
                     
                     
                     if(deleted === null && args.length === 1){
@@ -206,14 +182,14 @@
                         pluginList = currentlyBuildingClass.commands[currentlyBuildingClass.commands.length-1].plugins;
                     }
                     
-                    pluginList[pluginInfo.name] = args
+                    pluginList[pluginInfo.name] = args;
                 };
             }else if(pluginInfo.position === "void"){
                 
                 pluginInfo.priority = -10000;
                 
                 Class.prototype[pluginInfo.chainName] = function(){
-                    var args = objToArray(arguments)
+                    var args = objToArray(arguments);
                             
                     
                     var command = {type: "VoidPlugin", layer: null, category: null, name: null, value: null, plugins: {}};
@@ -373,7 +349,7 @@
             return this;
         },
         ProtectedFn: function(name, fn){
-            var command = {type: "ProtectedFn", layer: "Protected", category: "Fn", name: name, value: fn, plugins: {}}
+            var command = {type: "ProtectedFn", layer: "Protected", category: "Fn", name: name, value: fn, plugins: {}};
             this.commands.push(command);
             
             this._hasProtected = true;
@@ -438,27 +414,24 @@
             
             
             if(position === "next"){
-                pluginList = this._queuedPlugins
+                pluginList = this._queuedPlugins;
             }else if(position === "prev"){
                 pluginList = this.commands[this.commands.length-1].plugins;
-            }else{throw " Unknown position '"+position+"' sent to _ of Class" }
+            }else{throw " Unknown position '"+position+"' sent to _ of Class"; }
             
             
             for(var key in pluginsObject){
                 if(pluginsObject[key] !== null){
-                    (function(){
-                        
-                        var pluginInfo = registeredPlugins[key];
-                        
-                        var args = isArray(pluginsObject[key]) === false ? [pluginsObject[key]] : pluginsObject[key];
-                        
-                        if(pluginInfo.position === "void"){
-                            args = null;
-                        }
-                        
-                        
-                        pluginList[pluginInfo.name] = args
-                    }());
+                    var pluginInfo = registeredPlugins[key];
+                    
+                    var args = isArray(pluginsObject[key]) === false ? [pluginsObject[key]] : pluginsObject[key];
+                    
+                    if(pluginInfo.position === "void"){
+                        args = null;
+                    }
+                    
+                    
+                    pluginList[pluginInfo.name] = args;
                 }else{
                     
                     pluginList[registeredPlugins[key].name] = null;
@@ -468,7 +441,149 @@
         },
         
         End: function(){
-            var i,length = this.commands.length;
+            var i, self  = this;
+            
+            if(!this.allowJSNativeMode()){
+            
+                this.onCallClassConstructor = function(args){
+                    var publicObj = self._Build().publicObj;
+                    
+                
+                    var instance = makeInherit(publicObj);
+                    
+                    
+                    instance._Class = self;
+                    
+                    
+                    if(instance[self._config.constructorName]){
+                        
+                        var constructorResult = instance[self._config.constructorName].apply({}, args); 
+                        
+                        
+                        if(typeof constructorResult === "object"){
+                            
+                            return constructorResult;
+                        }else{
+                            
+                            return instance;
+                        }
+                    }else{
+                        
+                        return instance;
+                    }
+                };
+            }else{
+                if(this._extends){
+                    this.classConstructor.prototype = makeInherit(this._extends.classConstructor.prototype);
+                }else{
+                    this.classConstructor.prototype = makeInherit({});
+                }
+                
+                var fns = this.getCommandsByCategory("Fn");
+                var proto = this.classConstructor.prototype;
+                for(i=0;i<fns.length;i++){
+                    proto[fns[i].name] = fns[i].value;
+                }
+                
+                
+                this.onCallClassConstructor = function(args, returnInfo){
+                    var pluginObj, parentObj, getterSetters, pluginData = {};
+                    
+                    if(self._extends){
+                        parentObj = self._extends.onCallClassConstructor.call(this, args, true);
+                    }else{
+                        parentObj = null
+                    }
+                    
+                    for(i=0;i<self._voidPlugins.length;i++){
+                        executePlugins(self._voidPlugins[i].plugins, "onInstanceCreation", [pluginObj = {
+                            fn: null,
+                            getterSetters: null,
+                            command: self._voidPlugins[i],
+                            Class: self,
+                            privateObj: this,
+                            protectedObj: this,
+                            publicObj: this,
+                            parentObj: parentObj,
+                            pluginData: pluginData
+                        }]);
+                    }
+                    
+                    for(i=0;i<self._publicFns.length;i++){
+                        executePlugins(self._publicFns[i].plugins, "onInstanceCreation", [pluginObj = {
+                            fn: self._publicFns[i].value,
+                            command: self._publicFns[i],
+                            Class: self,
+                            privateObj: this,
+                            protectedObj: this,
+                            publicObj: this,
+                            parentObj: parentObj,
+                            pluginData: pluginData
+                        }]);
+                        
+                        if(self._publicFns[i].value !== pluginObj.fn){
+                            this[self._publicFns[i].name] = pluginObj.fn;
+                        }
+                    }
+                    
+                    for(i=0;i<self._publicVars.length;i++){
+                        if(!this.hasOwnProperty(self._publicVars[i].name)){
+                            getterSetters = makeGetterSetters(self._publicVars[i].name, this);
+                            
+                            executePlugins(self._publicVars[i].plugins, "onInstanceCreation", [pluginObj = {
+                                getterSetters: getterSetters,
+                                command: self._publicVars[i],
+                                Class: self,
+                                privateObj: this,
+                                protectedObj: this,
+                                publicObj: this,
+                                parentObj: parentObj,
+                                pluginData: pluginData
+                            }]);
+                            
+                            
+                            if(getterSetters.sourceHasGetterSetter){
+                                setGetterSetters(self._publicVars[i].name, getterSetters, this);
+                                if(getterSetters.sourceSetToInitialValue){
+                                    this[self._publicVars[i].name] = self._publicVars[i].value;
+                                }
+                            }else{
+                                this[self._publicVars[i].name] = self._publicVars[i].value;
+                            }
+                        }else if(parentObj && self._publicVars[i].value !== null){
+                            this[self._publicVars[i].name] = self._publicVars[i].value;
+                        }
+                    }
+                    
+                    if(returnInfo){
+                        return {
+                            privateObj: this,
+                            protectedObj: this,
+                            publicObj: this,
+                            parentObj: parentObj,
+                            pluginData: pluginData,
+                        };
+                    }else{
+                        if(this[self._config.constructorName]){
+                        
+                            var constructorResult = this[self._config.constructorName].apply(this, args); 
+                            
+                            
+                            if(typeof constructorResult === "object"){
+                                
+                                return constructorResult;
+                            }else{
+                                
+                                return this;
+                            }
+                        }else{
+                            
+                            return this;
+                        }
+                    }
+                };
+            }
+            
             
             for(i=0;i<this.commands.length;i++){
                 
@@ -504,7 +619,7 @@
             
             alreadyDefinedVars = alreadyDefinedVars || [];
             
-            pluginData = {}
+            pluginData = {};
             
             if(this._extends){
                 
@@ -520,7 +635,7 @@
                 protectedObj[this._config.superName] = parentObj.protectedObj;
             }else{
                 
-                parentObj = null
+                parentObj = null;
                 
                 privateObj = { _UID: Math.random() };
                 protectedObj = { _UID: privateObj._UID };
@@ -573,7 +688,7 @@
                 
                 
                 if(parentObj){
-                    parentObj.addChildFn(this._publicFns[i].name, fn)
+                    parentObj.addChildFn(this._publicFns[i].name, fn);
                 }
             }
             
@@ -599,7 +714,7 @@
                 privateObj[this._protectedFns[i].name] = fn;
                 
                 if(parentObj){
-                    parentObj.addChildFn(this._protectedFns[i].name, fn)
+                    parentObj.addChildFn(this._protectedFns[i].name, fn);
                 }
             }
             
@@ -742,13 +857,14 @@
                 privateObj: privateObj,
                 protectedObj: protectedObj,
                 publicObj: publicObj,
-                
+                parentObj: parentObj,
+                pluginData: pluginData,
                 
                 addChildFn: function(name, fn){
-                    privateObj[name] = fn
+                    privateObj[name] = fn;
                     
                     if(parentObj){
-                        parentObj.addChildFn(name, fn)
+                        parentObj.addChildFn(name, fn);
                     }
                 },
                 
@@ -759,7 +875,7 @@
                         parentObj.addChildProperty(name, getterSetters);
                     }
                 }
-            }
+            };
             
         },
         
@@ -773,45 +889,49 @@
         },
         
         getCommandsByType: function(aType){
-            var validCommands = []
+            var validCommands = [];
             for(var i=0;i<this.commands.length;i++){
                 if(this.commands[i].type === aType ){
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null
+            return validCommands.length > 0 ? validCommands : null;
         },
         
         getCommandsByLayer: function(aLayer){
-            var validCommands = []
+            var validCommands = [];
             for(var i=0;i<this.commands.length;i++){
                 if(this.commands[i].layer === aLayer ){
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null
+            return validCommands.length > 0 ? validCommands : null;
         },
         
         getCommandsByCategory: function(aCategory){
-            var validCommands = []
+            var validCommands = [];
             for(var i=0;i<this.commands.length;i++){
                 if(this.commands[i].category === aCategory ){
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null
+            return validCommands.length > 0 ? validCommands : null;
+        },
+        
+        allowJSNativeMode: function(){
+            return !this._hasPrivate && !this._hasProtected && (this._extends ? this._extends.allowJSNativeMode() : true);
         }
     };
     
     
     var isArray = Class.isArray = function(obj){
         return Object.prototype.toString.call(obj) === "[object Array]";
-    }
+    };
     
     
     var objToArray = Class.objToArray = function(obj){
         return Array.prototype.slice.call(obj, 0);
-    }
+    };
     
     function handleArgs(aClass, args, mode){
         var i, length = args.length, undef, key;
@@ -865,13 +985,13 @@
         if(Object.create){
             return function(obj){
                 return Object.create(obj);
-            }
+            };
         }else{
             return function(obj){
                 function o(){}
                 o.prototype = obj;
                 return new o();
-            }
+            };
         }
     }());
     
@@ -883,8 +1003,8 @@
                 return function(){
                     var result = fn.apply(thisArg, arguments);
                     return result !== thisArg ? result : this;
-                }
-            }
+                };
+            };
         
     }());
     
@@ -898,13 +1018,13 @@
                 return obj.sourceHasGetterSetter ? value : source[name];
             },
             set: function(newValue){
-                return obj.sourceHasGetterSetter ? value = newValue : source[name] = newValue
+                return obj.sourceHasGetterSetter ? value = newValue : source[name] = newValue;
             },
             
             sourceHasGetterSetter: false,
             sourceSetToInitialValue: true
         };
-    }
+    };
     
     
     var setGetterSetters = function(name, getterSetters, target){
@@ -913,8 +1033,8 @@
             set: getterSetters.set,
             configurable: true,
             enumerable: true
-        })
-    }
+        });
+    };
     
     
     var functionsToExport = Class.functionsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
@@ -932,8 +1052,8 @@
                 return function(){
                     aClass[key].apply(aClass, arguments);
                     return obj;
-                }
-            }(key))
+                };
+            }(key));
             
             
             if(globalize){
@@ -966,14 +1086,14 @@
     
     var arrayContains = Class.arrayContains = function(array, value){
         return indexOf(array, value) !== -1;
-    }
+    };
     
     
     var indexOf = Class.indexOf = (function(){
         if(Array.prototype.indexOf){
             return function(array, value){
                 return array.indexOf(value);
-            }
+            };
         }else{
             return function(array, value){
                 var i, length = array.length;
@@ -983,7 +1103,7 @@
                     }
                 }
                 return -1;
-            }
+            };
         }
     }());
     
@@ -991,11 +1111,13 @@
     var mergeObjects = Class.mergeObjects = function(target, source){
         if(target && source){
             for(var key in source){
-                target[key] = source[key];
+                if(source.hasOwnProperty(key)){
+                    target[key] = source[key];
+                }
             }
         }
         return target;
-    }
+    };
     
     
     function addQueuedPlugins(aClass, command){
@@ -1004,7 +1126,7 @@
 
         if(command.type !== "VoidPlugin"){
             
-            aClass._(aClass._config.persistentPlugins[command.type])
+            aClass._(aClass._config.persistentPlugins[command.type]);
         }
         
         aClass._(aClass._queuedPlugins);
@@ -1047,7 +1169,7 @@
         
         define([], function(){
             return Class;
-        })
+        });
     }
     
     
