@@ -6,43 +6,45 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
 ## Usage
   ```javascript
   
-  var Person = Class("Person")
-  
-    Private ("firstName");
-    Private ("LastName");
-    
-    Public (function setFirstName(firstName){
-      this.firstName = firstName;
-    });
+var Person = 
+    Class("Person")
 
-    Public (function setLastName(lastName){
-      this.lastName = lastName;
-    });
+        Private("firstName");
+        Private("LastName");
+        
+        Public(function setFirstName(firstName) {
+            this.firstName = firstName;
+        });
+        
+        Public(function setLastName(lastName) {
+            this.lastName = lastName;
+        });
+        
+        Public(function getFullName() {
+            return this.firstName + " " + this.lastName;
+        });
     
-    Public(function getFullName(){
-      return this.firstName + " " + this.lastName;
-    });
+    End()
     
-  End()
-
-  
-  var Programmer = Class("Programmer").Extends("Person")
-  
-    Private ("knownProgrammingLanguages");
     
-    Constructor (function(){
-        this.knownProgrammingLanguages = [];
-    })
+var Programmer = 
+    Class("Programmer").Extends("Person")
     
-    Public (function addKnownLanguage(languageName){
-      this.knownProgrammingLanguages.push(languageName);
-    })
+        Private("knownProgrammingLanguages");
+        
+        Constructor(function () {
+            this.knownProgrammingLanguages = [];
+        })
+        
+        Public(function addKnownLanguage(languageName) {
+            this.knownProgrammingLanguages.push(languageName);
+        })
+        
+        Public(function summary() {
+            return this.getFullName() + " knows the following languages: " + this.knownProgrammingLanguages.join(", ");
+        })
     
-    Public (function summary(){
-        return this.getFullName() + " knows the following languages: " + this.knownProgrammingLanguages.join(", ");
-    })
-    
-  End()
+    End()
 
   var me = new Programmer();
   
@@ -54,7 +56,7 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
   me.addKnownLanguage("JavaScript");
   me.addKnownLanguage("PHP");
   
-  console.log(me.summary()); //Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
+  console.log(me.summary()); // === Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
   ```
 
 I'm currently working on writing the complete documentation in this Repository's Wiki (just click above on "Wiki" to see the progress :) )
