@@ -6,10 +6,10 @@
     var globalConfig = {
     
         
-        constructorName: "_constructor",
+        constructorName: "init",
         
         
-        superName: "Super", 
+        superName: "super", 
         
         
         
@@ -151,7 +151,15 @@
             pluginInfo.chainName = pluginInfo.chainName || pluginInfo.name;
             
             
-            Class.functionsToExport.push(pluginInfo.chainName);
+            Class.functionsToExport[pluginInfo.chainName] = function(){
+                if(this._Class && this._Class instanceof Class){
+                    this._Class[methodName].apply(this._Class[methodName], objToArray(arguments));
+                }else if(currentlyBuildingClass){
+                    currentlyBuildingClass[methodName].apply(currentlyBuildingClass, objToArray(arguments))
+                }else{
+                    throw "Error: exported method of plugin " + pluginInfo.name + " cannot find a Class to call";
+                }
+            };
             
             if((pluginInfo.position === "before" || pluginInfo.position === "after")){
                 
@@ -225,6 +233,8 @@
             delete obj.persistentPlugins;
         }
         mergeObjects(globalConfig, obj);
+        
+        return this;
     };
     
     
@@ -238,6 +248,8 @@
         mergeObjects(globalConfig.persistentPlugins.PrivateFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.PrivateFn));
         mergeObjects(globalConfig.persistentPlugins.ProtectedFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.ProtectedFn));
         mergeObjects(globalConfig.persistentPlugins.PublicFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.PublicFn));
+        
+        return this;
     };
     
     Class.prototype = {
@@ -253,6 +265,8 @@
                 delete obj.persistentPlugins;
             }
             mergeObjects(this._config, obj);
+            
+            return this;
         },
         
         
@@ -264,6 +278,8 @@
             mergeObjects(this._config.persistentPlugins.PrivateFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.PrivateFn));
             mergeObjects(this._config.persistentPlugins.ProtectedFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.ProtectedFn));
             mergeObjects(this._config.persistentPlugins.PublicFn, mergeObjects(mergeObjects({}, pluginsObject.Fn), pluginsObject.PublicFn));
+            
+            return this;
         },
         
         
@@ -285,7 +301,7 @@
             return this;
         },
         
-        Public: function(){
+        Public: function(dn){
             handleArgs(this, objToArray(arguments), "Public");
             return this;
         },
@@ -446,7 +462,7 @@
             if(!this.allowJSNativeMode()){
             
                 this.onCallClassConstructor = function(args){
-                    var publicObj = self._Build().publicObj;
+                    var publicObj = self._BuildClassical().publicObj;
                     
                 
                     var instance = makeInherit(publicObj);
@@ -613,7 +629,7 @@
         
         
         
-        _Build: function(alreadyDefinedVars){
+        _BuildClassical: function(alreadyDefinedVars){
             var parentObj, privateObj, protectedObj, publicObj, i, fn, getterSetters, pluginObj, pluginData;
             
             
@@ -623,7 +639,7 @@
             
             if(this._extends){
                 
-                parentObj = this._extends._Build(alreadyDefinedVars);
+                parentObj = this._extends._BuildClassical(alreadyDefinedVars);
                 
                 privateObj = makeInherit(parentObj.protectedObj);
                 protectedObj = makeInherit(parentObj.protectedObj);
@@ -1037,46 +1053,60 @@
     };
     
     
-    var functionsToExport = Class.functionsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
+    var functionsToExport = Class.functionsToExport = (function(){
+        var methodsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
+        var objToExport = {};
+        
+        for(var i=0;i<methodsToExport.length; i++){
+            objToExport[methodsToExport[i]] = (function(methodName){
+                return function(){
+                    if(this._Class && this._Class instanceof Class){
+                        this._Class[methodName].apply(this._Class[methodName], objToArray(arguments));
+                    }else if(currentlyBuildingClass){
+                        currentlyBuildingClass[methodName].apply(currentlyBuildingClass, objToArray(arguments))
+                    }else{
+                        throw "Error: exported method cannot find a Class to call";
+                    }
+                }
+            }(methodsToExport[i]));
+        }
+        
+        methodsToExport = null;
+        return objToExport;
+    }());
     
     var swapedFunctionGlobal = {};
 
     
     var addExports = function(obj, globalize, aClass){
-        var key, i, length = functionsToExport.length;
-        for(i=0; i<length; i++){
-            key = functionsToExport[i];
-            
-            obj[key] = (function(key){
+        
+        for(var key in functionsToExport){
+            if(functionsToExport.hasOwnProperty(key)){
+                obj[key] = functionsToExport[key];
                 
-                return function(){
-                    aClass[key].apply(aClass, arguments);
-                    return obj;
-                };
-            }(key));
-            
-            
-            if(globalize){
+                if(globalize){
+                    swapedFunctionGlobal[key] = window[key];
                 
-                swapedFunctionGlobal[key] = window[key];
+                    window[key] = obj[key];
+                }
                 
-                window[key] = obj[key];
             }
         }
     };
     
     
     var removeExports = function(obj){
-        var key, i, length = functionsToExport.length;
-        for(i=0; i<length; i++){
-            key = functionsToExport[i];
-            
-            delete obj[key];
-            
-            if(typeof swapedFunctionGlobal[key] === "undefined"){
-                delete window[key];
-            }else{
-                window[key] = swapedFunctionGlobal[key];
+    
+        for(var key in functionsToExport){
+            if(functionsToExport.hasOwnProperty(key)){
+                delete obj[key];
+                
+                if(typeof swapedFunctionGlobal[key] === "undefined"){
+                    delete window[key];
+                }else{
+                    window[key] = swapedFunctionGlobal[key];
+                }
+                
             }
         }
         
