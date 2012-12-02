@@ -18,6 +18,7 @@
         
         keepDefinedClasses: true,
         
+        allowJSNativeMode : true,
         
         persistentPlugins: {
             PrivateVar: {},
@@ -115,7 +116,6 @@
         if(this._config.keepDefinedClasses){
             definedClasses[this.name] = aClassConstructor;
         }
-        
         
         
         addExports(aClassConstructor, this._config.globalize, this);
@@ -394,21 +394,20 @@
                 object = definedClasses[object];
             }
             
-            
             object = object._Class;
             
             
             if(!object){
-                throw "a Class (or Class name) was not to .Extends()";
+                throw "a Class (or Class name) was not given to .Extends()";
             }
             
             
             var command = {type: "Extends", object: object};
             
-            
             this.commands.unshift(command);
             
             this._extends = command.object;
+            
             
             return this;
         },
@@ -618,7 +617,6 @@
             }
             
             currentlyBuildingClass = null;
-            
             removeExports(this.classConstructor);
             
             
@@ -645,7 +643,6 @@
                 protectedObj = makeInherit(parentObj.protectedObj);
                 
                 publicObj = makeInherit(parentObj.publicObj);
-                
                 
                 privateObj[this._config.superName] = parentObj.protectedObj;
                 protectedObj[this._config.superName] = parentObj.protectedObj;
@@ -935,7 +932,7 @@
         },
         
         allowJSNativeMode: function(){
-            return !this._hasPrivate && !this._hasProtected && (this._extends ? this._extends.allowJSNativeMode() : true);
+            return this._config.allowJSNativeMode && !this._hasPrivate && !this._hasProtected && (this._extends ? this._extends.allowJSNativeMode() : true);
         }
     };
     
@@ -1055,20 +1052,10 @@
     
     var functionsToExport = Class.functionsToExport = (function(){
         var methodsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
-        var objToExport = {};
+        var objToExport = {}, undefined;
         
         for(var i=0;i<methodsToExport.length; i++){
-            objToExport[methodsToExport[i]] = (function(methodName){
-                return function(){
-                    if(this._Class && this._Class instanceof Class){
-                        this._Class[methodName].apply(this._Class[methodName], objToArray(arguments));
-                    }else if(currentlyBuildingClass){
-                        currentlyBuildingClass[methodName].apply(currentlyBuildingClass, objToArray(arguments))
-                    }else{
-                        throw "Error: exported method cannot find a Class to call";
-                    }
-                }
-            }(methodsToExport[i]));
+            objToExport[methodsToExport[i]] = undefined;
         }
         
         methodsToExport = null;
@@ -1079,14 +1066,23 @@
 
     
     var addExports = function(obj, globalize, aClass){
-        
+        var undefined;
         for(var key in functionsToExport){
             if(functionsToExport.hasOwnProperty(key)){
-                obj[key] = functionsToExport[key];
+                if(functionsToExport[key] !== undefined){
+                    obj[key] = functionsToExport[key];
+                }else{
+                    obj[key] = (function(methodName){
+                        return function(){
+                            aClass[methodName].apply(aClass, objToArray(arguments));
+                            return obj;
+                        }
+                    }(key))
+                }
+                
                 
                 if(globalize){
                     swapedFunctionGlobal[key] = window[key];
-                
                     window[key] = obj[key];
                 }
                 

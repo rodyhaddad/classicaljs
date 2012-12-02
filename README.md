@@ -1,7 +1,7 @@
-# Classical.js
+# ClassicalJS
 
 
-Classical.js is an adaptation of the OOP concepts of classical programming languages (PHP, C#, C++, Java) behaviours in JavaScript, without any emulation, parsing or compiling.
+ClassicalJS is an adaptation of the OOP concepts of classical programming languages (PHP, C#, C++, Java) behaviours in JavaScript, without any emulation, parsing or compiling.
 
 ## Usage
   ```javascript
