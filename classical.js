@@ -13,8 +13,7 @@
         
         
         
-        globalize: true, 
-        
+        globalize: true,
         
         keepDefinedClasses: true,
         
