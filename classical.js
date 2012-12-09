@@ -153,16 +153,8 @@
             
             pluginInfo.chainName = pluginInfo.chainName || pluginInfo.name;
             
-            
-            Class.functionsToExport[pluginInfo.chainName] = function(){
-                if(this._Class && this._Class instanceof Class){
-                    this._Class[methodName].apply(this._Class[methodName], objToArray(arguments));
-                }else if(currentlyBuildingClass){
-                    currentlyBuildingClass[methodName].apply(currentlyBuildingClass, objToArray(arguments))
-                }else{
-                    throw "Error: exported method of plugin " + pluginInfo.name + " cannot find a Class to call";
-                }
-            };
+            var undef;
+            Class.functionsToExport[pluginInfo.chainName] = undef;
             
             if((pluginInfo.position === "before" || pluginInfo.position === "after")){
                 
@@ -304,7 +296,7 @@
             return this;
         },
         
-        Public: function(dn){
+        Public: function(){
             handleArgs(this, objToArray(arguments), "Public");
             return this;
         },
@@ -519,7 +511,7 @@
                     if(self._extends){
                         parentObj = self._extends.onCallClassConstructor.call(this, args, true);
                     }else{
-                        parentObj = null
+                        parentObj = null;
                     }
                     
                     for(i=0;i<self._voidPlugins.length;i++){
@@ -588,7 +580,7 @@
                             protectedObj: this,
                             publicObj: this,
                             parentObj: parentObj,
-                            pluginData: pluginData,
+                            pluginData: pluginData
                         };
                     }else{
                         if(this[self._config.constructorName]){
@@ -978,7 +970,7 @@
                 case "object":
                     if(isArray(params[i])){
                         obj.dependencies = params[i];
-                    }else if(params[i] != null){
+                    }else if(params[i] !== null){
                         if(obj.classConfig === null){
                             obj.classConfig = params[i];
                         }else{
@@ -1129,10 +1121,10 @@
     
     var functionsToExport = Class.functionsToExport = (function(){
         var methodsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
-        var objToExport = {}, undefined;
+        var objToExport = {}, undef;
         
         for(var i=0;i<methodsToExport.length; i++){
-            objToExport[methodsToExport[i]] = undefined;
+            objToExport[methodsToExport[i]] = undef;
         }
         
         methodsToExport = null;
@@ -1142,19 +1134,20 @@
     var swapedFunctionGlobal = {};
 
     
+    var exportMethod = function(toReturn, aClass, methodName){
+        return function(){
+            aClass[methodName].apply(aClass, objToArray(arguments));
+            return toReturn;
+        };
+    };
     var addExports = function(obj, globalize, aClass){
-        var undefined;
+        var undef;
         for(var key in functionsToExport){
             if(functionsToExport.hasOwnProperty(key)){
-                if(functionsToExport[key] !== undefined){
+                if(functionsToExport[key] !== undef){
                     obj[key] = functionsToExport[key];
                 }else{
-                    obj[key] = (function(methodName){
-                        return function(){
-                            aClass[methodName].apply(aClass, objToArray(arguments));
-                            return obj;
-                        }
-                    }(key))
+                    obj[key] = exportMethod(obj, aClass, key);
                 }
                 
                 
