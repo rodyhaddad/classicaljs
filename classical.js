@@ -17,7 +17,7 @@
         
         keepDefinedClasses: true,
         
-        allowJSNativeMode : true,
+        allowJSNativeMode: true,
         
         persistentPlugins: {
             PrivateVar: {},
@@ -38,16 +38,16 @@
     
     
     
-    var Class = function(name, classConfig){
+    var Class = function(dependencies, name, classConfig, definition){
         
         if(!(this instanceof Class)){
-            return new Class(name, classConfig);
+            return new Class(dependencies, name, classConfig, definition);
         }
         
-        
+        var params = sortParams([dependencies, name, classConfig, definition]);
         
         if(currentlyBuildingClass){
-            throw "You are building a new Class ('" + name + "') without Ending the last one ('" + currentlyBuildingClass.name + "'). Please call 'End()' on the last Class before trying to build a new one";
+            throw "You are building a new Class ('" + params.name + "') without Ending the last one ('" + currentlyBuildingClass.name + "'). Please call 'End()' on the last Class before trying to build a new one";
         }
         currentlyBuildingClass = this;
         
@@ -68,13 +68,13 @@
         };
         
         
-        this.Config(classConfig || {});
+        this.Config(params.classConfig || {});
         
         
         this._queuedPlugins = {};
         
         
-        this.name = name || "";
+        this.name = params.name;
         
         
         this.commands = [];
@@ -95,10 +95,14 @@
         this._publicFns = [];
         this._voidPlugins = [];
         
-        
-        this.pluginData = {};
+        var pluginDataObj;
+        this.pluginData = function(){
+            return pluginDataObj || (pluginDataObj = {});
+        };
         
         var self = this;
+        
+                    
         function aClassConstructor(){
         
             return self.onCallClassConstructor.call(this, objToArray(arguments));
@@ -112,13 +116,13 @@
         this.classConstructor = aClassConstructor;
         
         
-        if(this._config.keepDefinedClasses){
-            definedClasses[this.name] = aClassConstructor;
-        }
-        
-        
         addExports(aClassConstructor, this._config.globalize, this);
         
+        
+        if(params.definition !== null){
+            params.definition.apply(aClassConstructor);
+            this.End();
+        }
         
         return aClassConstructor;
         
@@ -457,6 +461,16 @@
         End: function(){
             var i, self  = this;
             
+            if(this._config.keepDefinedClasses){
+                definedClasses[this.name] = this.classConstructor;
+            }
+            
+            if(this._extends){
+                this.classConstructor.prototype = makeInherit(this._extends.classConstructor.prototype);
+            }else{
+                this.classConstructor.prototype = makeInherit({});
+            }
+            
             if(!this.allowJSNativeMode()){
             
                 this.onCallClassConstructor = function(args){
@@ -487,11 +501,6 @@
                     }
                 };
             }else{
-                if(this._extends){
-                    this.classConstructor.prototype = makeInherit(this._extends.classConstructor.prototype);
-                }else{
-                    this.classConstructor.prototype = makeInherit({});
-                }
                 
                 var fns = this.getCommandsByCategory("Fn");
                 var proto = this.classConstructor.prototype;
@@ -501,7 +510,11 @@
                 
                 
                 this.onCallClassConstructor = function(args, returnInfo){
-                    var pluginObj, parentObj, getterSetters, pluginData = {};
+                    var pluginObj, parentObj, getterSetters, pluginDataObj, pluginData;
+                    
+                    pluginData = function(){
+                        return pluginDataObj || (pluginDataObj = {});
+                    };
                     
                     if(self._extends){
                         parentObj = self._extends.onCallClassConstructor.call(this, args, true);
@@ -609,7 +622,8 @@
                     
                     executePlugins(this.commands[i].plugins, "onDefinition", [{
                         command: this.commands[i], 
-                        Class: this
+                        Class: this,
+                        pluginData: this.pluginData
                     }]);
                 
                 }
@@ -626,21 +640,22 @@
         
         
         
-        _BuildClassical: function(alreadyDefinedVars){
-            var parentObj, privateObj, protectedObj, publicObj, i, fn, getterSetters, pluginObj, pluginData;
+        _BuildClassical: function(classBuilding, alreadyDefinedVars){
+            var parentObj, privateObj, protectedObj, publicObj, i, fn, getterSetters, pluginObj, pluginDataObj, pluginData;
             
-            
+            classBuilding = classBuilding || this;
             alreadyDefinedVars = alreadyDefinedVars || [];
             
-            pluginData = {};
+            pluginData = function(){
+                return pluginDataObj || (pluginDataObj = {});
+            };
             
             if(this._extends){
                 
-                parentObj = this._extends._BuildClassical(alreadyDefinedVars);
+                parentObj = this._extends._BuildClassical(classBuilding, alreadyDefinedVars);
                 
                 privateObj = makeInherit(parentObj.protectedObj);
                 protectedObj = makeInherit(parentObj.protectedObj);
-                
                 publicObj = makeInherit(parentObj.publicObj);
                 
                 privateObj[this._config.superName] = parentObj.protectedObj;
@@ -649,9 +664,9 @@
                 
                 parentObj = null;
                 
-                privateObj = { _UID: Math.random() };
-                protectedObj = { _UID: privateObj._UID };
-                publicObj = { _UID: privateObj._UID };
+                privateObj = makeInherit(classBuilding.classConstructor.prototype);
+                protectedObj = makeInherit(classBuilding.classConstructor.prototype);
+                publicObj = makeInherit(classBuilding.classConstructor.prototype);
             }
             
             privateObj._protectedLayer = protectedObj;
@@ -907,7 +922,7 @@
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null;
+            return validCommands;
         },
         
         getCommandsByLayer: function(aLayer){
@@ -917,7 +932,7 @@
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null;
+            return validCommands;
         },
         
         getCommandsByCategory: function(aCategory){
@@ -927,7 +942,7 @@
                     validCommands.push(this.commands[i]);
                 }
             }
-            return validCommands.length > 0 ? validCommands : null;
+            return validCommands;
         },
         
         allowJSNativeMode: function(){
@@ -944,6 +959,69 @@
     var objToArray = Class.objToArray = function(obj){
         return Array.prototype.slice.call(obj, 0);
     };
+    
+    function sortParams(params){
+        var obj = {
+            name: "",
+            classConfig: null,
+            definition: null,
+            dependencies: null
+        };
+        
+        var len = params.length > 4 ? 4 : params.length;
+        
+        for(var i=0; i<len; i++){
+            switch(typeof params[i]){
+                case "string":
+                    obj.name = params[i];
+                    break;
+                case "object":
+                    if(isArray(params[i])){
+                        obj.dependencies = params[i];
+                    }else if(params[i] != null){
+                        if(obj.classConfig === null){
+                            obj.classConfig = params[i];
+                        }else{
+                            obj.definition = params[i];
+                        }
+                    }
+                    break;
+                case "function":
+                    obj.definition = params[i];
+                    break;
+            }
+        }
+        
+        if(obj.classConfig !== null && obj.definition === null){
+            for(var key in obj.classConfig){
+                if(obj.classConfig.hasOwnProperty(key) && !globalConfig.hasOwnProperty(key)){
+                    obj.definition = obj.classConfig;
+                    
+                    obj.classConfig = null;
+                    break;
+                }
+            }
+        }
+        
+        if(typeof obj.definition === "object" && obj.definition !== null){
+            obj.definition = (function(definitionObj){
+                return function(){
+                    for(var key in definitionObj){
+                        if(definitionObj.hasOwnProperty(key)){
+                            if(this[key]){
+                                this[key](definitionObj[key]);
+                            }else{
+                                this.Public(key, definitionObj[key]);
+                            }
+                        }
+                    }
+                };
+            }(obj.definition));
+        }
+        
+        return obj;
+        
+    } 
     
     function handleArgs(aClass, args, mode){
         var i, length = args.length, undef, key;

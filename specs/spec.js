@@ -4,7 +4,7 @@ Class.Config({
 });
 
 
-describe("Should Be Working: ", function(){
+describe("This Should Be Working: ", function(){
     
     //test the basic Public/Private methods, as well as Constructors
     describe("[Basic] A Class in ClassicalJS", function(){
@@ -124,7 +124,8 @@ describe("Should Be Working: ", function(){
                 Class("globalizeTestFalse", { globalize: false })
         
                     expect(typeof Public === "undefined").toBe(true);
-                
+                    expect(typeof globalizeTestFalse.Public === "undefined").toBe(false);
+                    
                 globalizeTestFalse.End();
             
             
@@ -132,6 +133,7 @@ describe("Should Be Working: ", function(){
                 Class("globalizeTestTrue", { globalize: true })
         
                     expect(typeof Public === "undefined").toBe(false);
+                    expect(typeof globalizeTestTrue.Public === "undefined").toBe(false);
                 
                 globalizeTestTrue.End();
             
@@ -214,7 +216,6 @@ describe("Should Be Working: ", function(){
         
         var toInheret = 
             Class("toInheret", { keepDefinedClasses: true, constructorName: "init" })
-            
                 
                 Public("constructorShouldReturn", 1)
                 
@@ -272,6 +273,77 @@ describe("Should Be Working: ", function(){
         })
         
     });
+    
+    
+    describe("[Multiple Arguments] When Defining a Class, .Public/.Protected/.Private", function(){
+        it("can handle multiple arguments at once", function(){
+        
+            var multipleArgumentsTest = 
+                Class("multipleArgumentsTest")
+                    
+                    Public("test1");
+                    
+                    Public(function test2(){
+                        
+                    })
+                    
+                    Public("test3", function(){
+                        
+                    })
+                    
+                    Public({
+                        test4: null,
+                        test5: function(){
+                            
+                        },
+                        test6: true
+                    }, function test7(){
+                        
+                    }, 
+                     "test8",
+                     { test9: false },
+                     function test10(){
+                         
+                     }
+                    )
+                    
+                    Public({
+                        test11: "cool",
+                        test12: true,
+                        test13: function(){
+                            
+                        }
+                    })
+                    
+                    
+                End()
+            
+            var instance = new multipleArgumentsTest();
+            
+            expect(instance.test1).toBeDefined();
+            expect(instance.test2).toBeDefined();
+            expect(instance.test3).toBeDefined();
+            expect(instance.test4).toBeDefined();
+            expect(instance.test5).toBeDefined();
+            expect(instance.test6).toBeDefined();
+            expect(instance.test7).toBeDefined();
+            expect(instance.test8).toBeDefined();
+            expect(instance.test9).toBeDefined();
+            expect(instance.test10).toBeDefined();
+            expect(instance.test11).toBeDefined();
+            expect(instance.test12).toBeDefined();
+            expect(instance.test13).toBeDefined();
+            
+        })
+    });
 
+
+
+
+
+
+    describe("[Plugins]", function(){
+        
+    })
 
 })
