@@ -1,8 +1,8 @@
+
 ;(function(){
     
-    Class.version = "1.3";
     
-    var globalConfig = Class._config = {
+    var globalConfig = {
     
         
         constructorName: "init",
@@ -33,15 +33,15 @@
     };
     
     
-    var definedClasses = Class.definedClasses = {};
+    var definedClasses = {};
     
-    var objectsToInherit = Class.objectsToInherit = { _config : globalConfig };
+    
     
     var currentlyBuildingClass = null;
     
-    var queuedDepencencies = [];
     
-    function Class(dependencies, name, classConfig, definition){
+    
+    var Class = function(dependencies, name, classConfig, definition){
         
         if(!(this instanceof Class)){
             return new Class(dependencies, name, classConfig, definition);
@@ -53,10 +53,21 @@
             //throw "You are building a new Class ('" + params.name + "') without Ending the last one ('" + currentlyBuildingClass.name + "'). Please call 'End()' on the last Class before trying to build a new one";
         }
         currentlyBuildingClass = this;
-
-        for(var key in objectsToInherit){
-            this[key] = makeRecursiveInherit(objectsToInherit[key], "_Class", this);
-        }
+        
+        this._config = makeInherit(globalConfig);
+        
+        
+        
+        
+        this._config.persistentPlugins = {
+            PrivateVar: makeInherit(globalConfig.persistentPlugins.PrivateVar),
+            ProtectedVar: makeInherit(globalConfig.persistentPlugins.ProtectedVar),
+            PublicVar: makeInherit(globalConfig.persistentPlugins.PublicVar),
+            PrivateFn: makeInherit(globalConfig.persistentPlugins.PrivateFn),
+            ProtectedFn: makeInherit(globalConfig.persistentPlugins.ProtectedFn),
+            PublicFn: makeInherit(globalConfig.persistentPlugins.PublicFn)
+        };
+        
         
         this.Config(params.classConfig || {});
         
@@ -93,6 +104,7 @@
                     
         function aClassConstructor(){
             return self.onCallClassConstructor.call(this, objToArray(arguments));
+            
         }
         
         
@@ -104,26 +116,36 @@
         
         addExports(aClassConstructor, this._config.globalize, this);
         
-        if(params.definitionWrapper !== null){
+        /*
+        if(params.dependencies !== null && params.dependencies.length && typeof define === "function"){
+            define(params.dependencies, function(){
+                params.definition.apply(aClassConstructor, objToArray(arguments));
+                aClassConstructor.End();
+                return aClassConstructor;
+            });
+        }else if(params.definition !== null){
+            params.definition.apply(aClassConstructor);
+            this.End();
+        }
+        */
+        
+        if(params.definition !== null){
             if(this._config.defineRequireJS && typeof define === "function"){
-
                 if(params.dependencies !== null && params.dependencies.length){
-                    Class.treatRequireJSDependencies(params.dependencies);
                     define(params.dependencies, function(){
-                        params.definitionWrapper.call(aClassConstructor, objToArray(arguments));
+                        params.definition.apply(aClassConstructor, objToArray(arguments));
                         aClassConstructor.End(true);
                         return aClassConstructor;
                     });
                 }else{
                     define(function(){
-                        params.definitionWrapper.call(aClassConstructor);
+                        params.definition.apply(aClassConstructor);
                         aClassConstructor.End(true);
                         return aClassConstructor;
                     })
                 }
-                
             }else{
-                params.definitionWrapper.call(aClassConstructor);
+                params.definition.apply(aClassConstructor);
                 aClassConstructor.End();
             }
         }
@@ -133,9 +155,21 @@
     };
     
     
+    Class._config = globalConfig;
+    
+    Class.definedClasses = definedClasses;
+    
+    
+    
+    
     var pluginPriority = Class.pluginPriority = {high: 10, medium: 20, low: 30};
     
+    
     var registeredPlugins = Class.registeredPlugins = {};
+    
+    
+    
+    
     
     Class.addPlugin = function(pluginInfo){
         
@@ -145,11 +179,8 @@
             
             pluginInfo.chainName = pluginInfo.chainName || pluginInfo.name;
             
-            var splitChainName = cleanArray(pluginInfo.chainName.split("."), "");
             var undef;
-            navigateObj( functionsToExport, splitChainName, function(i){
-                return this.length-i === 1 ? undef : {};
-            });
+            Class.functionsToExport[pluginInfo.chainName] = undef;
             
             if((pluginInfo.position === "before" || pluginInfo.position === "after")){
                 
@@ -164,75 +195,51 @@
                 }
                 
                 
-                navigateObj(Class.prototype, splitChainName, function(i){
-                    if(this.length-i !== 1){
-                        return {};                        
-                    }else{
-                        return function(deleted){
-                            var pluginList, args = objToArray(arguments);
-                            var self = this._Class || this;
-                            
-                            if(deleted === null && args.length === 1){
-                                args = null;
-                            }
-                            
-                            if(pluginInfo.position === "before"){
-                                
-                                pluginList = self._queuedPlugins;
-                            }else if(pluginInfo.position === "after"){
-                                
-                                pluginList = self.commands[this.commands.length-1].plugins;
-                            }
-                            
-                            pluginList[pluginInfo.name] = args;
-                            
-                            return self;
-                        };
+                Class.prototype[pluginInfo.chainName] = function(deleted){
+                    var pluginList, args = objToArray(arguments);
+                    
+                    
+                    if(deleted === null && args.length === 1){
+                        args = null;
                     }
-                });
-                
+                    
+                    if(pluginInfo.position === "before"){
+                        
+                        pluginList = this._queuedPlugins;
+                    }else if(pluginInfo.position === "after"){
+                        
+                        pluginList = this.commands[this.commands.length-1].plugins;
+                    }
+                    
+                    pluginList[pluginInfo.name] = args;
+                };
             }else if(pluginInfo.position === "void"){
                 
                 pluginInfo.priority = -10000;
                 
-                navigateObj(Class.prototype, splitChainName, function(i){
-                    if(this.length-i !== 1){
-                        return {};                        
-                    }else{
-                        
-                        return function(){
-                            var args = objToArray(arguments);
-                            var self = this._Class || this;
+                Class.prototype[pluginInfo.chainName] = function(){
+                    var args = objToArray(arguments);
                             
-                            var command = {type: "VoidPlugin", layer: null, category: null, name: null, value: null, plugins: {}};
-                            
-                            command.plugins[pluginInfo.name] = args;
-                            
-                            
-                            self.commands.push(command);
-                            
-                            
-                            self._voidPlugins.push(command);
-                            
-                            
-                            addQueuedPlugins(self, command);
-                            
-                            return self;
-                        };
-                    }
-                })
-            }else{
-                throw "Invalid Plugin passed to Class.addPlugin(). pluginInfo.position is invalid on the plugin. Should be either 'before', 'after' or 'void'";
+                    
+                    var command = {type: "VoidPlugin", layer: null, category: null, name: null, value: null, plugins: {}};
+                    
+                    command.plugins[pluginInfo.name] = args;
+                    
+                    
+                    this.commands.push(command);
+                    
+                    
+                    this._voidPlugins.push(command);
+                    
+                    
+                    addQueuedPlugins(this, command);
+                };
             }
             
-            if(splitChainName.length > 1){
-                objectsToInherit[splitChainName[0]] = Class.prototype[splitChainName[0]];
-            }
+            
             
             
             registeredPlugins[pluginInfo.name] = pluginInfo;
-        }else{
-            throw "Invalid Plugin passed to Class.addPlugin(). No pluginInfo.onDefinition or pluginInfo.onInstanceCreation available on the plugin.";
         }
         
     };
@@ -267,6 +274,9 @@
     };
     
     Class.prototype = {
+        
+        
+        
         
         Config: function(obj){
             
@@ -447,69 +457,23 @@
             
             
             for(var key in pluginsObject){
-                if(registeredPlugins.hasOwnProperty(key)){
-                    if(pluginsObject[key] !== null){
-                        var pluginInfo = registeredPlugins[key];
-                        
-                        var args = isArray(pluginsObject[key]) === false ? [pluginsObject[key]] : pluginsObject[key];
-                        
-                        if(pluginInfo.position === "void"){
-                            args = null;
-                        }
-                        
-                        
-                        pluginList[pluginInfo.name] = args;
-                    }else{
-                        
-                        pluginList[registeredPlugins[key].name] = null;
+                if(pluginsObject[key] !== null){
+                    var pluginInfo = registeredPlugins[key];
+                    
+                    var args = isArray(pluginsObject[key]) === false ? [pluginsObject[key]] : pluginsObject[key];
+                    
+                    if(pluginInfo.position === "void"){
+                        args = null;
                     }
+                    
+                    
+                    pluginList[pluginInfo.name] = args;
+                }else{
+                    
+                    pluginList[registeredPlugins[key].name] = null;
                 }
             }
             return this;
-        },
-        
-        
-        getCommandByName: function(aName){
-            for(var i=0;i<this.commands.length;i++){
-                if(this.commands[i].name === aName ){
-                    return this.commands[i];
-                }
-            }
-            return null;
-        },
-        
-        getCommandsByType: function(aType){
-            var validCommands = [];
-            for(var i=0;i<this.commands.length;i++){
-                if(this.commands[i].type === aType ){
-                    validCommands.push(this.commands[i]);
-                }
-            }
-            return validCommands;
-        },
-        
-        getCommandsByLayer: function(aLayer){
-            var validCommands = [];
-            for(var i=0;i<this.commands.length;i++){
-                if(this.commands[i].layer === aLayer ){
-                    validCommands.push(this.commands[i]);
-                }
-            }
-            return validCommands;
-        },
-        
-        getCommandsByCategory: function(aCategory){
-            var validCommands = [];
-            for(var i=0;i<this.commands.length;i++){
-                if(this.commands[i].category === aCategory ){
-                    validCommands.push(this.commands[i]);
-                }
-            }
-            return validCommands;
-        },
-        
-        allowJSNativeMode: function(){
-            return this._config.allowJSNativeMode && !this._hasPrivate && !this._hasProtected && (this._extends ? this._extends.allowJSNativeMode() : true);
         },
         
         End: function(dontTryDefine){
@@ -524,24 +488,6 @@
             }else{
                 this.classConstructor.prototype = makeInherit({});
             }
-            
-            for(i=0;i<this.commands.length;i++){
-                
-                if(this.commands[i].plugins){
-                    
-                    
-                    sortPluginsByPriority(this.commands[i].plugins);
-                    
-                    
-                    executePlugins(this.commands[i].plugins, "onDefinition", [{
-                        command: this.commands[i], 
-                        Class: this,
-                        pluginData: this.pluginData
-                    }]);
-                
-                }
-            }
-
             
             if(!this.allowJSNativeMode()){
             
@@ -594,9 +540,6 @@
                         parentObj = null;
                     }
                     
-                    this._ = this;
-                    this.__ = this;
-                    
                     for(i=0;i<self._voidPlugins.length;i++){
                         executePlugins(self._voidPlugins[i].plugins, "onInstanceCreation", [pluginObj = {
                             fn: null,
@@ -646,13 +589,14 @@
                             
                             if(getterSetters.sourceHasGetterSetter){
                                 setGetterSetters(self._publicVars[i].name, getterSetters, this);
+                                if(getterSetters.sourceSetToInitialValue){
+                                    this[self._publicVars[i].name] = self._publicVars[i].value;
+                                }
+                            }else{
+                                this[self._publicVars[i].name] = self._publicVars[i].value;
                             }
-                            if(getterSetters.sourceSetToInitialValue){
-                                this[self._publicVars[i].name] = getDefaultValue(self._publicVars[i].value);
-                            }
-                            
                         }else if(parentObj && self._publicVars[i].value !== null){
-                            this[self._publicVars[i].name] = getDefaultValue(self._publicVars[i].value);
+                            this[self._publicVars[i].name] = self._publicVars[i].value;
                         }
                     }
                     
@@ -684,11 +628,29 @@
                     }
                 };
             }
-                        
+            
+            
+            for(i=0;i<this.commands.length;i++){
+                
+                if(this.commands[i].plugins){
+                    
+                    
+                    sortPluginsByPriority(this.commands[i].plugins);
+                    
+                    
+                    executePlugins(this.commands[i].plugins, "onDefinition", [{
+                        command: this.commands[i], 
+                        Class: this,
+                        pluginData: this.pluginData
+                    }]);
+                
+                }
+            }
+            
             currentlyBuildingClass = null;
             removeExports(this.classConstructor, this);
 
-            if(typeof define === "function" && this._config.defineRequireJS && dontTryDefine !== true){
+            if(this._config.defineRequireJS && dontTryDefine !== true){
                 define(function(){
                     return self.classConstructor
                 })
@@ -730,10 +692,8 @@
                 publicObj = makeInherit(classBuilding.classConstructor.prototype);
             }
             
-            privateObj.__ = protectedObj;
-            privateObj._ = publicObj;
-            
-            protectedObj._ = publicObj;
+            privateObj._protectedLayer = protectedObj;
+            privateObj._publicLayer = publicObj;
             
             privateObj.self = this.classConstructor;
             protectedObj.self = this.classConstructor;
@@ -853,9 +813,11 @@
                     
                     if(getterSetters.sourceHasGetterSetter){
                         setGetterSetters(this._publicVars[i].name, getterSetters, privateObj);
-                    }
-                    if(getterSetters.sourceSetToInitialValue){
-                        privateObj[this._publicVars[i].name] = getDefaultValue(this._publicVars[i].value);
+                        if(getterSetters.sourceSetToInitialValue){
+                            privateObj[this._publicVars[i].name] = this._publicVars[i].value;
+                        }
+                    }else{
+                        privateObj[this._publicVars[i].name] = this._publicVars[i].value;
                     }
                     
                     
@@ -871,7 +833,7 @@
                     }
                 }else if(parentObj && this._publicVars[i].value !== null){
                     
-                    parentObj.privateObj[this._publicVars[i].name] = getDefaultValue(this._publicVars[i].value);
+                    parentObj.privateObj[this._publicVars[i].name] = this._publicVars[i].value;
                 }
             }
             
@@ -895,9 +857,11 @@
                     
                     if(getterSetters.sourceHasGetterSetter){
                         setGetterSetters(this._protectedVars[i].name, getterSetters, privateObj);
-                    }
-                    if(getterSetters.sourceSetToInitialValue){
-                        privateObj[this._protectedVars[i].name] = getDefaultValue(this._protectedVars[i].value);
+                        if(getterSetters.sourceSetToInitialValue){
+                            privateObj[this._protectedVars[i].name] = this._protectedVars[i].value;
+                        }
+                    }else{
+                        privateObj[this._protectedVars[i].name] = this._protectedVars[i].value;
                     }
                     
                     setGetterSetters(this._protectedVars[i].name, getterSetters, protectedObj);
@@ -907,7 +871,7 @@
                         parentObj.addChildProperty(this._protectedVars[i].name, getterSetters);
                     }
                 }else if(parentObj && this._protectedVars[i].value !== null){
-                    parentObj.privateObj[this._protectedVars[i].name] = getDefaultValue(this._protectedVars[i].value);
+                    parentObj.privateObj[this._protectedVars[i].name] = this._protectedVars[i].value;
                 }
             }
             
@@ -929,9 +893,11 @@
             
                 if(getterSetters.sourceHasGetterSetter){
                     setGetterSetters(this._privateVars[i].name, getterSetters, privateObj);
-                }
-                if(getterSetters.sourceSetToInitialValue){
-                    privateObj[this._privateVars[i].name] = getDefaultValue(this._privateVars[i].value);
+                    if(getterSetters.sourceSetToInitialValue){
+                        privateObj[this._privateVars[i].name] = this._privateVars[i].value;
+                    }
+                }else{
+                    privateObj[this._privateVars[i].name] = this._privateVars[i].value;
                 }
             }
             
@@ -961,8 +927,50 @@
                 }
             };
             
-        }
+        },
         
+        getCommandByName: function(aName){
+            for(var i=0;i<this.commands.length;i++){
+                if(this.commands[i].name === aName ){
+                    return this.commands[i];
+                }
+            }
+            return null;
+        },
+        
+        getCommandsByType: function(aType){
+            var validCommands = [];
+            for(var i=0;i<this.commands.length;i++){
+                if(this.commands[i].type === aType ){
+                    validCommands.push(this.commands[i]);
+                }
+            }
+            return validCommands;
+        },
+        
+        getCommandsByLayer: function(aLayer){
+            var validCommands = [];
+            for(var i=0;i<this.commands.length;i++){
+                if(this.commands[i].layer === aLayer ){
+                    validCommands.push(this.commands[i]);
+                }
+            }
+            return validCommands;
+        },
+        
+        getCommandsByCategory: function(aCategory){
+            var validCommands = [];
+            for(var i=0;i<this.commands.length;i++){
+                if(this.commands[i].category === aCategory ){
+                    validCommands.push(this.commands[i]);
+                }
+            }
+            return validCommands;
+        },
+        
+        allowJSNativeMode: function(){
+            return this._config.allowJSNativeMode && !this._hasPrivate && !this._hasProtected && (this._extends ? this._extends.allowJSNativeMode() : true);
+        }
     };
     
     
@@ -970,9 +978,6 @@
         return Object.prototype.toString.call(obj) === "[object Array]";
     };
     
-    var isObject = Class.isObject = function(obj){
-        return typeof obj === "object" && obj !== null;
-    }
     
     var objToArray = Class.objToArray = function(obj){
         return Array.prototype.slice.call(obj, 0);
@@ -983,7 +988,6 @@
             name: "",
             classConfig: null,
             definition: null,
-            definitionWrapper: null,
             dependencies: null
         };
         
@@ -1022,34 +1026,21 @@
             }
         }
         
-        if(obj.definition !== null){
-            obj.definitionWrapper = (function(definition){
-                return function(args){
-                    if(typeof definition === "function"){
-                        definition = definition.apply(this, args);
-                    }
-                    if(definition){
-                        for(var key in definition){
-                            if(definition.hasOwnProperty(key)){
-                                if(this[key]){
-                                    this[key](definition[key]);
-                                }else if(key.indexOf(".") !== -1){
-                                    var fn = navigateObj(this, cleanArray(key.split("."), ""), false);
-                                    if(fn){
-                                        fn(definition[key]);
-                                    }
-                                }else{
-                                    this.Public(key, definition[key]);
-                                }
+        if(typeof obj.definition === "object" && obj.definition !== null){
+            obj.definition = (function(definitionObj){
+                return function(){
+                    for(var key in definitionObj){
+                        if(definitionObj.hasOwnProperty(key)){
+                            if(this[key]){
+                                this[key](definitionObj[key]);
+                            }else{
+                                this.Public(key, definitionObj[key]);
                             }
                         }
                     }
                 };
             }(obj.definition));
         }
-        
-        obj.dependencies = queuedDepencencies.concat(obj.dependencies || []);
-        queuedDepencencies = [];
         
         return obj;
         
@@ -1081,20 +1072,13 @@
         
         for(i=0;i<length;i++){
             
-            if(isObject(args[i])){
+            if(typeof args[i] === "object" && args[i] !== null){
                 for(key in args[i]){ 
                     if(typeof args[i][key] === "function"){ 
                         aClass[mode+"Fn"](key, args[i][key]); 
                         
-                    }else if(aClass[key]){
-                        aClass[key](args[i][key]);
-                    }else if(key.indexOf(".") !== -1){
-                        var fn = navigateObj(this, cleanArray(key.split("."), ""), false);
-                        if(fn){
-                            fn(args[i][key]);
-                        }
                     }else{
-                        aClass[mode+"Var"](key, args[i][key]);
+                        aClass[mode+"Var"](key, args[i][key]); 
                         
                     }
                 }
@@ -1110,7 +1094,7 @@
     }
     
     
-    var makeInherit = Class.makeInherit = (function(){
+    var makeInherit = (function(){
         if(Object.create){
             return function(obj){
                 return Object.create(obj);
@@ -1123,21 +1107,6 @@
             };
         }
     }());
-    
-    makeRecursiveInherit = Class.makeRecursiveInherit = function(obj, persistentProp, value){
-        var inheritObj = makeInherit(obj);
-        if(typeof persistentProp !== "undefined"){
-            inheritObj[persistentProp] = value;
-        }
-        for(var key in obj){
-            if(obj.hasOwnProperty(key)){
-                if(isObject(obj[key]) && globalConfig.globalObj !== obj[key]){
-                    inheritObj[key] = makeRecursiveInherit(obj[key], persistentProp, value);
-                }
-            }
-        }
-        return inheritObj;
-    };
     
     
     
@@ -1180,6 +1149,68 @@
         });
     };
     
+    
+    var functionsToExport = Class.functionsToExport = (function(){
+        var methodsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
+        var objToExport = {}, undef;
+        
+        for(var i=0;i<methodsToExport.length; i++){
+            objToExport[methodsToExport[i]] = undef;
+        }
+        
+        methodsToExport = null;
+        return objToExport;
+    }());
+    
+    var swapedFunctionGlobal = {};
+
+    
+    var exportMethod = function(toReturn, aClass, methodName){
+        return function(){
+            aClass[methodName].apply(aClass, objToArray(arguments));
+            return toReturn;
+        };
+    };
+    var addExports = function(obj, globalize, aClass){
+        var undef;
+        for(var key in functionsToExport){
+            if(functionsToExport.hasOwnProperty(key)){
+                if(functionsToExport[key] !== undef){
+                    obj[key] = functionsToExport[key];
+                }else{
+                    obj[key] = exportMethod(obj, aClass, key);
+                }
+                
+                
+                if(globalize){
+                    swapedFunctionGlobal[key] = aClass._config.globalObj[key];
+                    aClass._config.globalObj[key] = obj[key];
+                }
+                
+            }
+        }
+    };
+    
+    
+    var removeExports = function(obj, aClass){
+    
+        for(var key in functionsToExport){
+            if(functionsToExport.hasOwnProperty(key)){
+                delete obj[key];
+                
+                if(typeof swapedFunctionGlobal[key] === "undefined"){
+                    delete aClass._config.globalObj[key];
+                }else{
+                    aClass._config.globalObj[key] = swapedFunctionGlobal[key];
+                }
+                
+            }
+        }
+        
+        swapedFunctionGlobal = {};
+    };
+    
+    
     var arrayContains = Class.arrayContains = function(array, value){
         return indexOf(array, value) !== -1;
     };
@@ -1203,24 +1234,6 @@
         }
     }());
     
-    var cleanArray = Class.cleanArray = function(array, from){
-        for(var i=array.length-1; i>=0; i--){
-            if(array[i] === from){
-                array.splice(i, 1);
-            }
-        }
-        return array;
-    }
-    
-    var getDefaultValue = Class.getDefaultValue = function(value){
-        if(isArray(value)){
-            return value.slice();
-        }else if(isObject(value)){
-            return mergeObjects({}, value);
-        }else{
-            return value;
-        }
-    }
     
     var mergeObjects = Class.mergeObjects = function(target, source){
         if(target && source){
@@ -1233,82 +1246,6 @@
         return target;
     };
     
-    
-    var functionsToExport = Class.functionsToExport = (function(){
-        var methodsToExport = ["Private", "Protected", "Public", "Extends", "End", "Constructor", "Config", "_", "PersistentPlugins"];
-        var objToExport = {}, undef;
-        
-        for(var i=0;i<methodsToExport.length; i++){
-            objToExport[methodsToExport[i]] = undef;
-        }
-        
-        methodsToExport = null;
-        return objToExport;
-    }());
-    
-    var swapedFunctionGlobal = {};
-
-    
-    var exportMethod = function(toReturn, thisArg, method){
-        return function(){
-            method.apply(thisArg, objToArray(arguments));
-            return toReturn;
-        };
-    };
-    var addExports = function(obj, globalize, aClass){
-        var undef;
-        for(var key in functionsToExport){
-            if(functionsToExport.hasOwnProperty(key)){
-                if(functionsToExport[key] !== undef){
-                    if(isObject(functionsToExport[key])){
-                        obj[key] = mergeObjects({}, functionsToExport[key]);
-                        findUndefAndExport(obj[key], aClass[key], obj, aClass);
-                    }else{
-                        obj[key] = functionsToExport[key];
-                    }
-                }else{
-                    obj[key] = exportMethod(obj, aClass, aClass[key]);
-                }
-                
-                
-                if(globalize){
-                    swapedFunctionGlobal[key] = aClass._config.globalObj[key];
-                    aClass._config.globalObj[key] = obj[key];
-                }
-                
-            }
-        }
-    };
-    var findUndefAndExport = function(obj, source, toReturn, thisArg){
-        var undef;
-        for(var key in obj){
-            if(obj.hasOwnProperty(key)){
-               if(obj[key] === undef){
-                   obj[key] = exportMethod(toReturn, thisArg, source[key])
-               }else if( isObject(obj[key]) ){
-                   findUndefAndExport(obj[key], source[key], toReturn, thisArg);
-               }
-            }
-        }
-    }
-    
-    var removeExports = function(obj, aClass){
-    
-        for(var key in functionsToExport){
-            if(functionsToExport.hasOwnProperty(key)){
-                delete obj[key];
-                
-                if(typeof swapedFunctionGlobal[key] === "undefined"){
-                    delete aClass._config.globalObj[key];
-                }else{
-                    aClass._config.globalObj[key] = swapedFunctionGlobal[key];
-                }
-                
-            }
-        }
-        
-        swapedFunctionGlobal = {};
-    };
     
     function addQueuedPlugins(aClass, command){
         
@@ -1354,52 +1291,36 @@
         }
     }
     
-    function navigateObj(obj, road, fnValue){
-        for(var i=0; i<road.length; i++){
-            if( !obj.hasOwnProperty(road[i]) ){
-                if(fnValue !== false){
-                    obj[road[i]] = fnValue ? fnValue.call(road, i, road[i], road.length) : {};
-                }else{
-                    return;
-                }
-            }
-            obj = obj[road[i]];
-        }
-        
-        return obj;
-    }
-    
-    
-    Class.treatRequireJSDependencies = function(dependencies){
-        for(var i=0; i<dependencies.length; i++){
-            dependencies[i] = "ClassRequireJSPlugin!"+dependencies[i];
-        }
-    }
     
     if(typeof define === "function"){
-        define("Class", [], function(){
+        define([], function(){
             return Class;
         });
-        
-        define("ClassRequireJSPlugin", {
-            load: function (name, require, load, config) {
-                
-                require([name], function (value) {
-                    load(value);
-                });
-            }
-        });
-        
     }
     
-    globalConfig.globalObj.Class = Class;
+    if(typeof window !== "undefined"){
+        window.Class = Class;
+    }
     
-    globalConfig.globalObj.Import = function(ressource){
-        queuedDepencencies.push(ressource);
+    if(typeof global !== "undefined"){
+        global.Class = Class;
     }
 
-    if(typeof module !== "undefined"){
-        module.exports = Class;
-    }
     
 }());
+define("../../classical.js", function(){});
+
+requirejs.config({
+	baseUrl: './scripts',
+})
+
+
+require(["../../classical.js"], function(){
+    require(["./classTest"], function(classTest){
+    
+    	console.dir( new classTest().methodWorks() );
+    	
+    });
+});
+
+define("main", function(){});
