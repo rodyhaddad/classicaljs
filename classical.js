@@ -85,15 +85,17 @@
         
         var pluginDataObj;
         this.pluginData = function(){
-            return pluginDataObj || (pluginDataObj = {});
+            return pluginDataObj || (pluginDataObj = this._extends ? makeInherit(this._extends.pluginData()) : {} );
         };
         
         var self = this;
         
+        
+        var aClassConstructor = new Function("self", "objToArray", "function "+(this.name || "AnonymousClass")+"(){ return self.onCallClassConstructor.call(this, objToArray(arguments)); } return "+(this.name || "AnonymousClass")+";")(self, objToArray);
                     
-        function aClassConstructor(){
+        /*function aClassConstructor(){
             return self.onCallClassConstructor.call(this, objToArray(arguments));
-        }
+        }*/
         
         
         aClassConstructor._Class = this;
@@ -581,106 +583,23 @@
                 }
                 
                 
-                this.onCallClassConstructor = function(args, returnInfo){
-                    var pluginObj, parentObj, getterSetters, pluginDataObj, pluginData;
+                this.onCallClassConstructor = function(args){
+                    self._BuildNative(this, self);
+                    if(this[self._config.constructorName]){
                     
-                    pluginData = function(){
-                        return pluginDataObj || (pluginDataObj = {});
-                    };
-                    
-                    if(self._extends){
-                        parentObj = self._extends.onCallClassConstructor.call(this, args, true);
-                    }else{
-                        parentObj = null;
-                    }
-                    
-                    this._ = this;
-                    this.__ = this;
-                    
-                    for(i=0;i<self._voidPlugins.length;i++){
-                        executePlugins(self._voidPlugins[i].plugins, "onInstanceCreation", [pluginObj = {
-                            fn: null,
-                            getterSetters: null,
-                            command: self._voidPlugins[i],
-                            Class: self,
-                            privateObj: this,
-                            protectedObj: this,
-                            publicObj: this,
-                            parentObj: parentObj,
-                            pluginData: pluginData
-                        }]);
-                    }
-                    
-                    for(i=0;i<self._publicFns.length;i++){
-                        executePlugins(self._publicFns[i].plugins, "onInstanceCreation", [pluginObj = {
-                            fn: self._publicFns[i].value,
-                            command: self._publicFns[i],
-                            Class: self,
-                            privateObj: this,
-                            protectedObj: this,
-                            publicObj: this,
-                            parentObj: parentObj,
-                            pluginData: pluginData
-                        }]);
+                        var constructorResult = this[self._config.constructorName].apply(this, args); 
                         
-                        if(self._publicFns[i].value !== pluginObj.fn){
-                            this[self._publicFns[i].name] = pluginObj.fn;
-                        }
-                    }
-                    
-                    for(i=0;i<self._publicVars.length;i++){
-                        if(!this.hasOwnProperty(self._publicVars[i].name)){
-                            getterSetters = makeGetterSetters(self._publicVars[i].name, this);
-                            
-                            executePlugins(self._publicVars[i].plugins, "onInstanceCreation", [pluginObj = {
-                                getterSetters: getterSetters,
-                                command: self._publicVars[i],
-                                Class: self,
-                                privateObj: this,
-                                protectedObj: this,
-                                publicObj: this,
-                                parentObj: parentObj,
-                                pluginData: pluginData
-                            }]);
-                            
-                            
-                            if(getterSetters.sourceHasGetterSetter){
-                                setGetterSetters(self._publicVars[i].name, getterSetters, this);
-                            }
-                            if(getterSetters.sourceSetToInitialValue){
-                                this[self._publicVars[i].name] = getDefaultValue(self._publicVars[i].value);
-                            }
-                            
-                        }else if(parentObj && self._publicVars[i].value !== null){
-                            this[self._publicVars[i].name] = getDefaultValue(self._publicVars[i].value);
-                        }
-                    }
-                    
-                    if(returnInfo){
-                        return {
-                            privateObj: this,
-                            protectedObj: this,
-                            publicObj: this,
-                            parentObj: parentObj,
-                            pluginData: pluginData
-                        };
-                    }else{
-                        if(this[self._config.constructorName]){
                         
-                            var constructorResult = this[self._config.constructorName].apply(this, args); 
+                        if(typeof constructorResult === "object"){
                             
-                            
-                            if(typeof constructorResult === "object"){
-                                
-                                return constructorResult;
-                            }else{
-                                
-                                return this;
-                            }
+                            return constructorResult;
                         }else{
                             
                             return this;
                         }
+                    }else{
+                        
+                        return this;
                     }
                 };
             }
@@ -698,22 +617,116 @@
         },
         
         
-        
-        
-        
-        _BuildClassical: function(classBuilding, alreadyDefinedVars){
-            var parentObj, privateObj, protectedObj, publicObj, i, fn, getterSetters, pluginObj, pluginDataObj, pluginData;
+        _BuildNative: function(instance, classCurrentlyBuilding){
+            //classCurrentlyBuilding: classCurrentlyBuilding,
+            var pluginObj, parentObj, getterSetters, pluginDataObj, pluginData;
             
-            classBuilding = classBuilding || this;
-            alreadyDefinedVars = alreadyDefinedVars || [];
+            classCurrentlyBuilding = classCurrentlyBuilding || this;
             
-            pluginData = function(){
+            if(this._extends){
+                parentObj = this._extends._BuildNative(instance, classCurrentlyBuilding);
+            }else{
+                parentObj = null;
+            }
+            
+            pluginData = parentObj ? parentObj.pluginData : function(){
                 return pluginDataObj || (pluginDataObj = {});
             };
             
+            
+            instance._ = instance;
+            instance.__ = instance;
+            
+            for(i=0;i<this._voidPlugins.length;i++){
+                executePlugins(this._voidPlugins[i].plugins, "onInstanceCreation", [pluginObj = {
+                    fn: null,
+                    getterSetters: null,
+                    command: this._voidPlugins[i],
+                    Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
+                    privateObj: instance,
+                    protectedObj: instance,
+                    publicObj: instance,
+                    parentObj: parentObj,
+                    pluginData: pluginData
+                }]);
+            }
+            
+            for(i=0;i<this._publicFns.length;i++){
+                executePlugins(this._publicFns[i].plugins, "onInstanceCreation", [pluginObj = {
+                    fn: this._publicFns[i].value,
+                    command: this._publicFns[i],
+                    Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
+                    privateObj: instance,
+                    protectedObj: instance,
+                    publicObj: instance,
+                    parentObj: parentObj,
+                    pluginData: pluginData
+                }]);
+                
+                if(this._publicFns[i].value !== pluginObj.fn){
+                    instance[this._publicFns[i].name] = pluginObj.fn;
+                }
+            }
+            
+            for(i=0;i<this._publicVars.length;i++){
+                if(!instance.hasOwnProperty(this._publicVars[i].name)){
+                    getterSetters = makeGetterSetters(this._publicVars[i].name, instance);
+                    
+                    executePlugins(this._publicVars[i].plugins, "onInstanceCreation", [pluginObj = {
+                        getterSetters: getterSetters,
+                        command: this._publicVars[i],
+                        Class: this,
+                        classCurrentlyBuilding: classCurrentlyBuilding,
+                        privateObj: instance,
+                        protectedObj: instance,
+                        publicObj: instance,
+                        parentObj: parentObj,
+                        pluginData: pluginData
+                    }]);
+                    
+                    
+                    if(getterSetters.sourceHasGetterSetter){
+                        setGetterSetters(this._publicVars[i].name, getterSetters, instance);
+                    }
+                    if(getterSetters.sourceSetToInitialValue){
+                        instance[this._publicVars[i].name] = getDefaultValue(this._publicVars[i].value);
+                    }
+                    
+                }else if(parentObj && this._publicVars[i].value !== null){
+                    instance[this._publicVars[i].name] = getDefaultValue(this._publicVars[i].value);
+                }
+            }
+            
+            return {
+                privateObj: instance,
+                protectedObj: instance,
+                publicObj: instance,
+                parentObj: parentObj,
+                pluginData: pluginData,
+                
+                addChildFn: function(){
+                    throw "This is a natively built Class. No addChildFn available";
+                },
+                
+                addChildProperty: function(){
+                    throw "This is a natively built Class. No addChildProperty available";
+                }
+            };
+
+        },
+        
+        
+        _BuildClassical: function(classCurrentlyBuilding, alreadyDefinedVars){
+            var parentObj, privateObj, protectedObj, publicObj, i, fn, getterSetters, pluginObj, pluginDataObj, pluginData;
+            
+            classCurrentlyBuilding = classCurrentlyBuilding || this;
+            alreadyDefinedVars = alreadyDefinedVars || [];
+            
             if(this._extends){
                 
-                parentObj = this._extends._BuildClassical(classBuilding, alreadyDefinedVars);
+                parentObj = this._extends._BuildClassical(classCurrentlyBuilding, alreadyDefinedVars);
                 
                 privateObj = makeInherit(parentObj.protectedObj);
                 protectedObj = makeInherit(parentObj.protectedObj);
@@ -725,10 +738,14 @@
                 
                 parentObj = null;
                 
-                privateObj = makeInherit(classBuilding.classConstructor.prototype);
-                protectedObj = makeInherit(classBuilding.classConstructor.prototype);
-                publicObj = makeInherit(classBuilding.classConstructor.prototype);
+                privateObj = makeInherit(classCurrentlyBuilding.classConstructor.prototype);
+                protectedObj = makeInherit(classCurrentlyBuilding.classConstructor.prototype);
+                publicObj = makeInherit(classCurrentlyBuilding.classConstructor.prototype);
             }
+            
+            pluginData = parentObj ? parentObj.pluginData : function(){
+                return pluginDataObj || (pluginDataObj = {});
+            };
             
             privateObj.__ = protectedObj;
             privateObj._ = publicObj;
@@ -745,6 +762,7 @@
                     getterSetters: null,
                     command: this._voidPlugins[i],
                     Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
                     privateObj: privateObj,
                     protectedObj: protectedObj,
                     publicObj: publicObj,
@@ -762,6 +780,7 @@
                     fn: fn,
                     command: this._publicFns[i],
                     Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
                     privateObj: privateObj,
                     protectedObj: protectedObj,
                     publicObj: publicObj,
@@ -792,6 +811,7 @@
                     fn: fn,
                     command: this._protectedFns[i],
                     Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
                     privateObj: privateObj,
                     protectedObj: protectedObj,
                     publicObj: publicObj,
@@ -818,6 +838,7 @@
                     fn: fn,
                     command: this._privateFns[i],
                     Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
                     privateObj: privateObj,
                     protectedObj: protectedObj,
                     publicObj: publicObj,
@@ -843,6 +864,7 @@
                         getterSetters: getterSetters,
                         command: this._publicVars[i],
                         Class: this,
+                        classCurrentlyBuilding: classCurrentlyBuilding,
                         privateObj: privateObj,
                         protectedObj: protectedObj,
                         publicObj: publicObj,
@@ -886,6 +908,7 @@
                         getterSetters: getterSetters,
                         command: this._protectedVars[i],
                         Class: this,
+                        classCurrentlyBuilding: classCurrentlyBuilding,
                         privateObj: privateObj,
                         protectedObj: protectedObj,
                         publicObj: publicObj,
@@ -920,6 +943,7 @@
                     getterSetters: getterSetters,
                     command: this._privateVars[i],
                     Class: this,
+                    classCurrentlyBuilding: classCurrentlyBuilding,
                     privateObj: privateObj,
                     protectedObj: protectedObj,
                     publicObj: publicObj,
