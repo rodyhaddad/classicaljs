@@ -57,4 +57,10 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
   console.log(me.summary()); //Rody Haddad knows the following languages: HTML, CSS, JavaScript, PHP 
   ```
 
+##Notes
+
 I'm currently working on writing the complete documentation in this Repository's Wiki (just click above on "Wiki" to see the progress :) )
+
+Many new features have been added (Plugins, Imports, etc.), but they're not 100% stable.  
+They are being developed in the `dev` branch.  
+Once they're stable and test proof, they will be merged to the master branch.  
