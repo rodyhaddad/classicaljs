@@ -1,0 +1,23 @@
+{
+    "name": "ClassicalJS",
+    "version": "0.0.0",
+    "description": "Classicaljs helps you structure your code using Classes. Your class definitions can have plugins, which allow you to do amazing things",
+    "main": "dist/classical.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/rodyhaddad/classicaljs.git"
+    },
+    "keywords": [
+        "classical",
+        "class"
+    ],
+    "author": "rodyhaddad",
+    "license": "MIT",
+    "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-contrib-uglify": "~0.2.0",
+        "grunt-contrib-jshint": "~0.4.3",
+        "grunt-contrib-concat": "~0.3.0",
+        "grunt-contrib-watch": "~0.4.4"
+    }
+}

@@ -1,0 +1,7 @@
+function Component() {
+
+}
+
+Component.prototype = {
+
+};

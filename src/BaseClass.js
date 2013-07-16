@@ -1,0 +1,7 @@
+function BaseClass() {
+
+}
+
+BaseClass.prototype = {
+
+};

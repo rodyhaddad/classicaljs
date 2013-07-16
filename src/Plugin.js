@@ -1,0 +1,7 @@
+function Plugin() {
+
+}
+
+Plugin.prototype = {
+
+};

@@ -1,0 +1,7 @@
+function PluginList() {
+
+}
+
+PluginList.prototype = {
+
+};
