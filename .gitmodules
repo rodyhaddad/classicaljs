@@ -1,0 +1,4 @@
+[submodule "libs/objectTools.js"]
+	path = libs/objectTools.js
+	url = git@github.com:rodyhaddad/objectTools.js.git
+	branch = master
