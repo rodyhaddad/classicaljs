@@ -52,7 +52,6 @@ describe("This Should Be Working: ", function(){
             expect(testInstance.publicProperty).toBe(1);
             
             expect(testInstance.privateProperty).toBeUndefined();
-            
             expect(testInstance.get("privateProperty")).toBe(2);
             
         });
@@ -159,8 +158,8 @@ describe("This Should Be Working: ", function(){
             var allowJSNativeModeTestFalse = 
                 Class("allowJSNativeModeTestFalse", {allowJSNativeMode: false})
                 
-                    Public(function method(){
-                        
+                    Public(function testThis(that){
+                        return this === that;
                     })
                 
                 End();
@@ -168,14 +167,20 @@ describe("This Should Be Working: ", function(){
             var allowJSNativeModeTestTrue = 
                 Class("allowJSNativeModeTestTrue", {allowJSNativeMode: true})
                 
-                    Public(function method(){
-                        
+                    Public(function testThis(that){
+                        return this === that;
                     })
                 
                 End();
             
-            expect(allowJSNativeModeTestFalse.prototype.method).toBeUndefined()
-            expect(allowJSNativeModeTestTrue.prototype.method).toBeDefined()
+            
+            var instance;
+            
+            instance = new allowJSNativeModeTestFalse();
+            expect(instance.testThis(instance)).toBe(false);
+            
+            instance = new allowJSNativeModeTestTrue();
+            expect(instance.testThis(instance)).toBe(true);
             
         })
         
