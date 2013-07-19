@@ -1,6 +1,6 @@
 function Plugin(name, info, $ClassDefiner) {
     this.name = name;
-    this.info = ot.softMerge(info, Plugin.defaults);
+    this.info = info;
     this.$ClassDefiner = $ClassDefiner;
     var thisPlugin = this;
 
@@ -25,11 +25,6 @@ Plugin.priorities = {
     "low": 30,
     "OwnComponent": -10000, // TODO implement this
     "default": 30
-};
-
-Plugin.defaults = {
-    level: "Component",
-    priority: Plugin.priorities["default"]
 };
 
 Plugin.levels = {

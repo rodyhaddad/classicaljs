@@ -7,5 +7,9 @@ BaseClass.addPlugin = function addPlugin(name, info) {
         info.name = name;
     }
 
+    ot.softMerge(info, {
+        level: "Component",
+        priority: Plugin.priorities["default"]
+    });
     this.registeredPlugins[name] = new Plugin(name, info, this);
 };
