@@ -1,0 +1,3 @@
+var baseConfig = {
+    defaultMethod: "Public"
+};

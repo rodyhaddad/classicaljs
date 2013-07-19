@@ -1,12 +1,25 @@
 <!doctype html public "Classical.js">
 <html>
     <head>
-        <meta charset="utf-8" />
+        <meta charset="utf-8"/>
         <title>Classical.js</title>
     </head>
     <body>
         <h1>This page is currently used for tests</h1>
+
         <h2>Feel free to open up your console and test Classical.js :)</h2>
-        <script type="text/javascript" src="_classical.js"></script>
+        <script type="text/javascript" src="dist/classical.js"></script>
+        <script>
+            k = BaseClass("test", {aConfig: 'yay'}, function (arg1) {
+                Config({
+                    testBlah: true
+                });
+                Public(function testMethod() {
+                    console.log(this);
+                });
+            });
+
+            console.dir(l = new k('cool'));
+        </script>
     </body>
 </html>

@@ -5,14 +5,12 @@ function EventEmitter() {
 EventEmitter.prototype = {
     addListener: function (event, listener, context) {
         var info = { listener: listener, context: context };
-        if (!this.listeners) {
-            this.listeners = {};
-        }
+        if (!this.listeners) this.listeners = {};
 
         if (!this.listeners[event]) {
             this.listeners[event] = [info];
         } else {
-            this.listeners[event].push(info)
+            this.listeners[event].push(info);
         }
 
     },
@@ -36,7 +34,7 @@ EventEmitter.prototype = {
     removeAllListeners: function (event) { /* [event] */
         if (ot.isUndefined(event)) {
             this.listeners = null;
-        } else if(this.listeners && this.listeners[event]) {
+        } else if (this.listeners && this.listeners[event]) {
             this.listeners[event] = null;
         }
     },

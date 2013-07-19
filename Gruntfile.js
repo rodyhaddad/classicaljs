@@ -1,8 +1,8 @@
-odule.exports = function (grunt) {
+module.exports = function (grunt) {
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
-        destName: 'classicalcur',
+        destName: 'classical',
         LICENSE: grunt.file.read("LICENSE"),
         concat: {
             options: {
@@ -10,7 +10,14 @@ odule.exports = function (grunt) {
                 banner: '/*! <%= pkg.name %> v<%= pkg.version %> <%= grunt.template.today("dd-mm-yyyy") %> \n<%= LICENSE %>\n*/\n\n'
             },
             dist: {
-                src: ["src/*"],
+                src: [
+                    "libs/objectTools.js/dist/objectTools.js",
+                    "src/baseConfig.js",
+                    "src/EventEmitter.js",
+                    "src/*.js",
+                    "src/handleParams.js",
+                    "src/Plugins/*.js"
+                ],
                 dest: 'dist/<%= destName %>.js'
             }
         },
@@ -27,7 +34,7 @@ odule.exports = function (grunt) {
         jshint: {
             files: ['src/*.js'],
             options: {
-                // options here to override JSHint defaults
+                boss: true,
                 globals: {
                     module: true
                 }
