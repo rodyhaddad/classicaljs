@@ -6,14 +6,20 @@ function exportClassFn(road) {
             var $Class = this.$Class || currentlyBuilding[0];
             var fn = ot.navigate.get($Class, road);
             if (ot.isFn(fn)) {
-                fn.apply($Class, arguments);
+                var val = fn.apply($Class, arguments);
+                return val === $Class ? $Class.classConstructor : val;
+            } else {
+                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
             }
         };
     } else {
         return function () {
             var $Class = this.$Class || currentlyBuilding[0];
             if (ot.isFn($Class[road])) {
-                $Class[road].apply($Class, arguments);
+                var val = $Class[road].apply($Class, arguments);
+                return val === $Class ? $Class.classConstructor : val;
+            } else {
+                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
             }
         };
     }

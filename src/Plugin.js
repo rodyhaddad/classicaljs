@@ -6,16 +6,16 @@ function Plugin(name, info, $ClassDefiner) {
 
 Plugin.prototype = {
     invoke: function ($Class, args) {
-        var continueInvoke = this.onInvoke.apply(this, [
+        var invokeValue = this.onInvoke.apply(this, [
             {
                 $Class: $Class,
                 args: args
             }
         ].concat(args));
 
-        if (continueInvoke !== false) {
-            this.apply($Class, args);
-        }
+        this.apply($Class, args);
+
+        return invokeValue;
     },
     apply: function ($Class, args) {
         var continueApply = this.onApply.apply(this, [
@@ -34,6 +34,7 @@ Plugin.prototype = {
                 Plugin.levels[this.info.level](this, $Class, args);
             }
         }
+        return continueApply;
     },
     getLevelObject: function (info) {
         if (ot.isObject(this.info.level)) {

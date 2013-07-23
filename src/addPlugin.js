@@ -14,7 +14,8 @@ BaseClass.addPlugin = function addPlugin(name, info) {
     var plugin = new Plugin(name, info, this);
 
     ot.navigate.setOwn(this.prototype, name, function () {
-        plugin.invoke(this.$Class, ot.toArray(arguments));
+        var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
+        return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
     });
 
     ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
