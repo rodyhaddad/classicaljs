@@ -20,6 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+var Class = (function () {
+
 /*! objectTools.js v0.7.0 19-07-2013 
 The MIT License (MIT)
 
@@ -710,16 +712,16 @@ function Plugin(name, info, $ClassDefiner) {
 
 Plugin.prototype = {
     invoke: function ($Class, args) {
-        var continueInvoke = this.onInvoke.apply(this, [
+        var invokeValue = this.onInvoke.apply(this, [
             {
                 $Class: $Class,
                 args: args
             }
         ].concat(args));
 
-        if (continueInvoke !== false) {
-            this.apply($Class, args);
-        }
+        this.apply($Class, args);
+
+        return invokeValue;
     },
     apply: function ($Class, args) {
         var continueApply = this.onApply.apply(this, [
@@ -738,6 +740,7 @@ Plugin.prototype = {
                 Plugin.levels[this.info.level](this, $Class, args);
             }
         }
+        return continueApply;
     },
     getLevelObject: function (info) {
         if (ot.isObject(this.info.level)) {
@@ -934,7 +937,8 @@ BaseClass.addPlugin = function addPlugin(name, info) {
     var plugin = new Plugin(name, info, this);
 
     ot.navigate.setOwn(this.prototype, name, function () {
-        plugin.invoke(this.$Class, ot.toArray(arguments));
+        var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
+        return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
     });
 
     ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
@@ -950,14 +954,20 @@ function exportClassFn(road) {
             var $Class = this.$Class || currentlyBuilding[0];
             var fn = ot.navigate.get($Class, road);
             if (ot.isFn(fn)) {
-                fn.apply($Class, arguments);
+                var val = fn.apply($Class, arguments);
+                return val === $Class ? $Class.classConstructor : val;
+            } else {
+                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
             }
         };
     } else {
         return function () {
             var $Class = this.$Class || currentlyBuilding[0];
             if (ot.isFn($Class[road])) {
-                $Class[road].apply($Class, arguments);
+                var val = $Class[road].apply($Class, arguments);
+                return val === $Class ? $Class.classConstructor : val;
+            } else {
+                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
             }
         };
     }
@@ -1167,3 +1177,6 @@ BaseClass.addPlugin("Public", {
         }
     }
 });
+
+    return BaseClass;
+}());

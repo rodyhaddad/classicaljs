@@ -11,13 +11,15 @@ module.exports = function (grunt) {
             },
             dist: {
                 src: [
+                    "src/classicaljs.prefix",
                     "libs/objectTools.js/dist/objectTools.js",
                     "src/baseConfig.js",
                     "src/EventEmitter.js",
                     "src/*.js",
                     "src/handleParams.js",
                     "src/getComponents.js",
-                    "src/Plugins/*.js"
+                    "src/Plugins/*.js",
+                    "src/classicaljs.suffix"
                 ],
                 dest: 'dist/<%= destName %>.js'
             }

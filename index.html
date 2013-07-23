@@ -10,14 +10,13 @@
         <h2>Feel free to open up your console and test Classical.js :)</h2>
         <script type="text/javascript" src="dist/classical.js"></script>
         <script>
-            var A = BaseClass("A", function () {
+            var A = Class("A", function () {
                 Public(function testInherit() {
 
                 });
             });
 
-
-            var B = BaseClass("B", {aConfig: 'yay'}, function (arg1) {
+            var B = Class("B", {aConfig: 'yay'}, function (arg1) {
                 Extends(A);
                 Config({
                     testBlah: true
