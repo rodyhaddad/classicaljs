@@ -1,3 +1,5 @@
 var baseConfig = {
-    defaultMethod: "Public"
+    constructorName: "init",
+    defaultMethod: "Public",
+    superName: "$Super"
 };

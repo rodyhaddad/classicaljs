@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8"/>
-        <title>Classical.js</title>
+        <title>ClassicalJS</title>
     </head>
     <body>
         <h1>This page is currently used for tests</h1>
@@ -10,7 +10,15 @@
         <h2>Feel free to open up your console and test Classical.js :)</h2>
         <script type="text/javascript" src="dist/classical.js"></script>
         <script>
-            k = BaseClass("test", {aConfig: 'yay'}, function (arg1) {
+            var A = BaseClass("A", function () {
+                Public(function testInherit() {
+
+                });
+            });
+
+
+            var B = BaseClass("B", {aConfig: 'yay'}, function (arg1) {
+                Extends(A);
                 Config({
                     testBlah: true
                 });
@@ -19,7 +27,7 @@
                 });
             });
 
-            console.dir(l = new k('cool'));
+            console.dir(l = new B('cool'));
         </script>
     </body>
 </html>

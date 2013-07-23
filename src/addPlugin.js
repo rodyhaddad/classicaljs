@@ -11,5 +11,13 @@ BaseClass.addPlugin = function addPlugin(name, info) {
         level: "Component",
         priority: Plugin.priorities["default"]
     });
-    this.registeredPlugins[name] = new Plugin(name, info, this);
+    var plugin = new Plugin(name, info, this);
+
+    ot.navigate.setOwn(this.prototype, name, function () {
+        plugin.invoke(this.$Class, ot.toArray(arguments));
+    });
+
+    ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
+
+    this.registeredPlugins[name] = plugin;
 };

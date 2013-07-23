@@ -3,7 +3,7 @@ var currentlyBuilding = [];
 function exportClassFn(road) {
     if (road.indexOf(".") !== -1) {
         return function () {
-            var $Class = currentlyBuilding[0];
+            var $Class = this.$Class || currentlyBuilding[0];
             var fn = ot.navigate.get($Class, road);
             if (ot.isFn(fn)) {
                 fn.apply($Class, arguments);
@@ -11,7 +11,7 @@ function exportClassFn(road) {
         };
     } else {
         return function () {
-            var $Class = currentlyBuilding[0];
+            var $Class = this.$Class || currentlyBuilding[0];
             if (ot.isFn($Class[road])) {
                 $Class[road].apply($Class, arguments);
             }

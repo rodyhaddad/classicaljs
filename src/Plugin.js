@@ -2,22 +2,80 @@ function Plugin(name, info, $ClassDefiner) {
     this.name = name;
     this.info = info;
     this.$ClassDefiner = $ClassDefiner;
-    var thisPlugin = this;
+}
 
-    this.invoke = ot.navigate.set($ClassDefiner.prototype, name, function () {
-        var args = ot.toArray(arguments);
-
-        thisPlugin.onInvoke.apply(thisPlugin, [
+Plugin.prototype = {
+    invoke: function ($Class, args) {
+        var continueInvoke = this.onInvoke.apply(this, [
             {
-                $Class: this.$Class
+                $Class: $Class,
+                args: args
             }
         ].concat(args));
 
-        Plugin.levels[info.level](thisPlugin, this.$Class, args);
-    });
+        if (continueInvoke !== false) {
+            this.apply($Class, args);
+        }
+    },
+    apply: function ($Class, args) {
+        var continueApply = this.onApply.apply(this, [
+            {
+                $Class: $Class,
+                args: args
+            }
+        ].concat(args));
 
-    ot.navigate.set($ClassDefiner.valuesToExport, name, exportClassFn(name));
-}
+        if (continueApply !== false) {
+            if (ot.isObject(this.info.level)) {
+                ot.forEach(this.info.level, function (value, level) {
+                    Plugin.levels[level](this, $Class, args);
+                }, this);
+            } else {
+                Plugin.levels[this.info.level](this, $Class, args);
+            }
+        }
+    },
+    getLevelObject: function (info) {
+        if (ot.isObject(this.info.level)) {
+            if ("component" in info) {
+                if (info.component.mainPlugin === this) {
+                    return this.info.level.OwnComponent;
+                } else {
+                    return this.info.level.Component;
+                }
+            } else {
+                return this.info.level.Class;
+            }
+        } else {
+            return this.info;
+        }
+    },
+    onDefinition: generateEventHandler("onDefinition"),
+    onInstanceCreation: generateEventHandler("onInstanceCreation"),
+    onInvoke: function () {
+        return ot.result(this.info, "onInvoke", arguments);
+    },
+    onApply: function () {
+        return ot.result(this.info, "onApply", arguments);
+    },
+    getInfo: function (level, property, pluginArgs, $Class) {
+        var args = [
+            {
+                $Class: $Class,
+                args: pluginArgs
+            }
+        ].concat(pluginArgs);
+
+        if (ot.isObject(this.info.level)) {
+            if (level in this.info.level) {
+                return ot.result(this.info.level[level], property, args);
+            }
+        } else if (this.info.level === level) {
+            return ot.result(this.info, property, args);
+        }
+        return null;
+    }
+};
 
 Plugin.priorities = {
     "high": 10,
@@ -29,51 +87,62 @@ Plugin.priorities = {
 
 Plugin.levels = {
     Component: function (plugin, $Class, args) {
-        if (this.info.position === "before") {
-            $Class.queuedComponentPlugins.addPlugin(plugin, args);
-        } else if (this.info.position === "after") {
-            var lastComponent = $Class.components[$Class.components.length - 1];
-            if (lastComponent) {
-                lastComponent.pluginList.addPlugin(plugin, args);
-            }
-        } else {
-            throw "A Component level plugin does not have a good " +
-                "`position: 'before'|'after'` property. Plugin: " + this.name;
+        var position = plugin.getInfo("Component", "position", args, $Class);
+        switch (position) {
+            case "before":
+                $Class.queuedComponentPlugins.addPlugin(plugin, args);
+                break;
+            case "after":
+                var lastComponent = $Class.components[$Class.components.length - 1];
+                if (lastComponent) {
+                    lastComponent.pluginList.addPlugin(plugin, args);
+                }
+                break;
+            default:
+                throw "A Component level plugin does not have a good " +
+                    "`position: 'before'|'after'` property. Plugin: " + plugin.name;
+        }
+    },
+    Class: function (plugin, $Class, args) {
+        var execute = plugin.getInfo("Class", "execute", args, $Class);
+        switch (execute) {
+            case "first":
+                $Class.ClassPluginsFirst.addPlugin(plugin, args);
+                break;
+            case "last":
+                $Class.ClassPluginsLast.addPlugin(plugin, args);
+                break;
+            case "both":
+                $Class.ClassPluginsFirst.addPlugin(plugin, args);
+                $Class.ClassPluginsLast.addPlugin(plugin, args);
+                break;
+            default:
+                throw "A Class level plugin does not have a good `" +
+                    "execute: 'first'|'last'` property. Plugin: " + plugin.name;
         }
     },
     OwnComponent: function (plugin, $Class, args) {
-        var component = new Component($Class, plugin);
+        var componentDetails = plugin.getInfo("OwnComponent", "component", args, $Class),
+            component = new Component($Class, plugin, componentDetails);
+
         component.pluginList.addPlugin(plugin, args);
         $Class.addComponent(component);
+
         component.pluginList.addPlugins($Class.queuedComponentPlugins);
         $Class.queuedComponentPlugins.reset();
-    },
-    Class: function (plugin, $Class, args) {
-        if (this.info.execute === "first") {
-            $Class.ClassPluginsFirst.addPlugin(plugin, args);
-        } else if (this.info.execute === "last") {
-            $Class._ClassPluginsExecLast.addPlugin(plugin, args);
-        } else {
-            throw "A Class level plugin does not have a good `" +
-                "execute: 'first'|'last'` property. Plugin: " + this.name;
-        }
     }
 };
 
-Plugin.prototype = {
-    onDefinition: function () {
-        if (this.info.onDefinition) {
-            this.info.onDefinition.apply(this.info, arguments);
+function generateEventHandler(name) {
+    return function (info) {
+        var continueExec, levelObj = this.getLevelObject(info);
+        if (name in this.info) {
+            continueExec = ot.result(this.info, name, arguments);
         }
-    },
-    onInstanceCreation: function () {
-        if (this.info.onInstanceCreation) {
-            this.info.onInstanceCreation.apply(this.info, arguments);
+        if (continueExec !== false && name in levelObj) {
+            continueExec = ot.result(levelObj, name, arguments);
         }
-    },
-    onInvoke: function () {
-        if (this.info.onInvoke) {
-            this.info.onInvoke.apply(this.info, arguments);
-        }
-    }
-};
+
+        return continueExec;
+    };
+}

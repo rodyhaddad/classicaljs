@@ -16,6 +16,7 @@ module.exports = function (grunt) {
                     "src/EventEmitter.js",
                     "src/*.js",
                     "src/handleParams.js",
+                    "src/getComponents.js",
                     "src/Plugins/*.js"
                 ],
                 dest: 'dist/<%= destName %>.js'

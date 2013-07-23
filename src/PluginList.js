@@ -2,6 +2,7 @@ function PluginList(component, $Class) {
     EventEmitter.call(this);
     this.component = component;
     this.plugins = {};
+    this.$Class = $Class;
     this.$ClassDefiner = $Class.$ClassDefiner;
     this.order = null;
 }
@@ -29,10 +30,21 @@ PluginList.prototype = ot.inherit(EventEmitter.prototype, {
 
         if (!this.order) this.refreshOrder();
 
-        ot.forEach(this.order, function (name) {
-            var args = this.plugins[name];
-            registeredPlugins[name][on].apply(registeredPlugins[name], infoArgs.concat(args));
-        }, this);
+        this.emit("beforeExec", on, infoArgs, this);
+        for (var i = 0; i < this.order.length; i++) {
+            var name = this.order[i],
+                args = this.plugins[name], keepPlugin;
+            infoArgs[0].args = args;
+
+            keepPlugin = registeredPlugins[name][on].apply(registeredPlugins[name], infoArgs.concat(args));
+            if (keepPlugin === false) {
+                this.order.splice(i, 1);
+                delete this.plugins[name];
+                i--;
+            }
+        }
+        delete infoArgs[0].args;
+        this.emit("afterExec", this);
     },
     refreshOrder: function () {
         var order = [],

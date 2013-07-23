@@ -41,13 +41,14 @@ ot.merge(BaseClass, {
     config: baseConfig,
     toInherit: {
         config: baseConfig
+    },
+    Config: function (config) {
+        ot.deepMerge(this.config, config);
     }
 });
 
 BaseClass.prototype = {
-    Config: function (config) {
-        ot.deepMerge(this.config, config);
-    },
+    Config: BaseClass.Config,
     End: function () {
         removeExport(this.classConstructor, this.$ClassDefiner);
         removeExport(window, this.$ClassDefiner);
