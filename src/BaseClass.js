@@ -24,8 +24,12 @@ function BaseClass(args) {
     this.ClassPluginsLast = new PluginList(null, this);
     this.queuedComponentPlugins = new PluginList(false, this);
 
+    ot.forEach(this.$ClassDefiner.$$queuedPlugins, function (queuedPlugin) {
+        queuedPlugin.plugin.apply(this, queuedPlugin.args);
+    }, this);
+
     addExport(this.classConstructor, this.$ClassDefiner);
-    addExport(window, this.$ClassDefiner);
+    addExport(ot.globalObj, this.$ClassDefiner);
     if (this.params.definition) {
         this.params.definition.call(this.classConstructor);
         this.End();
@@ -44,14 +48,15 @@ ot.merge(BaseClass, {
     },
     Config: function (config) {
         ot.deepMerge(this.config, config);
-    }
+    },
+    $$queuedPlugins: []
 });
 
 BaseClass.prototype = {
     Config: BaseClass.Config,
     End: function () {
         removeExport(this.classConstructor, this.$ClassDefiner);
-        removeExport(window, this.$ClassDefiner);
+        removeExport(ot.globalObj, this.$ClassDefiner);
         var infoArgs = [
             {
                 $Class: this.$Class

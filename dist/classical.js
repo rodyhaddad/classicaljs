@@ -573,6 +573,99 @@ EventEmitter.prototype.on = EventEmitter.prototype.addListener;
 EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
 EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
 
+function PluginList(component, $Class) {
+    EventEmitter.call(this);
+    this.component = component;
+    this.plugins = {};
+    this.$Class = $Class;
+    this.$ClassDefiner = $Class.$ClassDefiner;
+    this.order = null;
+}
+
+PluginList.prototype = ot.inherit(EventEmitter.prototype, {
+    reset: function () {
+        this.plugins = {};
+        this.order = null;
+    },
+    addPlugin: function (plugin, args) {
+        if (plugin.name in this.plugins && plugin.allowMultiple()) {
+            if (this.plugins[plugin.name].multiple) {
+                this.plugins[plugin.name].push(args);
+            } else {
+                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
+                this.plugins[plugin.name].multiple = true;
+            }
+        } else {
+            this.plugins[plugin.name] = args;
+        }
+    },
+    addPlugins: function (pluginsObject) {
+        if (pluginsObject instanceof  PluginList) {
+            this.addPlugins(pluginsObject.plugins);
+        } else {
+            var registeredPlugins = this.$ClassDefiner.registeredPlugins;
+            ot.forEach(pluginsObject, function (args, name) {
+                this.addPlugin(registeredPlugins[name], args);
+            }, this);
+        }
+    },
+    execute: function (on, infoArgs) {
+        var regPlugins = this.$ClassDefiner.registeredPlugins;
+        if (!this.order) this.refreshOrder();
+
+        this.emit("beforeExec", on, infoArgs, this);
+        for (var i = 0; i < this.order.length; i++) {
+            var keepPlugin,
+                name = this.order[i],
+                args = this.plugins[name];
+
+            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
+            if (keepPlugin === false) {
+                this.order.splice(i, 1);
+                delete this.plugins[name];
+                i--;
+            }
+        }
+        delete infoArgs[0].args;
+        this.emit("afterExec", on, infoArgs, this);
+    },
+    executePlugin: function (plugin, on, infoArgs, args) {
+        var keepPlugin;
+        if (args.multiple) {
+            for (var i = 0; i < args.length; i++) {
+                infoArgs[0].args = args[i];
+                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
+                if (keepPlugin === false) {
+                    args.splice(i, 1);
+                    i--;
+                }
+            }
+            return !!args.length;
+        } else {
+            infoArgs[0].args = args;
+            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
+            return keepPlugin;
+        }
+    },
+    refreshOrder: function () {
+        var order = [],
+            plugins = this.plugins,
+            registeredPlugins = this.$ClassDefiner.registeredPlugins;
+
+        for (var key in plugins) {
+            if (key in registeredPlugins) {
+                order.push(key);
+            }
+        }
+
+        order.sort(function (a, b) {
+            return registeredPlugins[a].priority - registeredPlugins[b].priority;
+        });
+
+        return this.order = order;
+    }
+});
+
 function BaseClass(args) {
     args = args.isParams ? args : ot.toArray(arguments);
     if (!(this instanceof BaseClass)) {
@@ -599,8 +692,12 @@ function BaseClass(args) {
     this.ClassPluginsLast = new PluginList(null, this);
     this.queuedComponentPlugins = new PluginList(false, this);
 
+    ot.forEach(this.$ClassDefiner.$$queuedPlugins, function (queuedPlugin) {
+        queuedPlugin.plugin.apply(this, queuedPlugin.args);
+    }, this);
+
     addExport(this.classConstructor, this.$ClassDefiner);
-    addExport(window, this.$ClassDefiner);
+    addExport(ot.globalObj, this.$ClassDefiner);
     if (this.params.definition) {
         this.params.definition.call(this.classConstructor);
         this.End();
@@ -619,14 +716,15 @@ ot.merge(BaseClass, {
     },
     Config: function (config) {
         ot.deepMerge(this.config, config);
-    }
+    },
+    $$queuedPlugins: []
 });
 
 BaseClass.prototype = {
     Config: BaseClass.Config,
     End: function () {
         removeExport(this.classConstructor, this.$ClassDefiner);
-        removeExport(window, this.$ClassDefiner);
+        removeExport(ot.globalObj, this.$ClassDefiner);
         var infoArgs = [
             {
                 $Class: this.$Class
@@ -711,7 +809,7 @@ function Plugin(name, info, $ClassDefiner) {
 }
 
 Plugin.prototype = {
-    invoke: function ($Class, args) {
+    invoke: function ($Class, args, callApply) {
         var invokeValue = this.onInvoke.apply(this, [
             {
                 $Class: $Class,
@@ -719,7 +817,9 @@ Plugin.prototype = {
             }
         ].concat(args));
 
-        this.apply($Class, args);
+        if (callApply !== false) {
+            this.apply($Class, args);
+        }
 
         return invokeValue;
     },
@@ -857,99 +957,6 @@ function generateEventHandler(name) {
     };
 }
 
-function PluginList(component, $Class) {
-    EventEmitter.call(this);
-    this.component = component;
-    this.plugins = {};
-    this.$Class = $Class;
-    this.$ClassDefiner = $Class.$ClassDefiner;
-    this.order = null;
-}
-
-PluginList.prototype = ot.inherit(EventEmitter.prototype, {
-    reset: function () {
-        this.plugins = {};
-        this.order = null;
-    },
-    addPlugin: function (plugin, args) {
-        if (plugin.name in this.plugins && plugin.allowMultiple()) {
-            if (this.plugins[plugin.name].multiple) {
-                this.plugins[plugin.name].push(args);
-            } else {
-                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
-                this.plugins[plugin.name].multiple = true;
-            }
-        } else {
-            this.plugins[plugin.name] = args;
-        }
-    },
-    addPlugins: function (pluginsObject) {
-        if (pluginsObject instanceof  PluginList) {
-            this.addPlugins(pluginsObject.plugins);
-        } else {
-            var registeredPlugins = this.$ClassDefiner.registeredPlugins;
-            ot.forEach(pluginsObject, function (args, name) {
-                this.addPlugin(registeredPlugins[name], args);
-            }, this);
-        }
-    },
-    execute: function (on, infoArgs) {
-        var regPlugins = this.$ClassDefiner.registeredPlugins;
-        if (!this.order) this.refreshOrder();
-
-        this.emit("beforeExec", on, infoArgs, this);
-        for (var i = 0; i < this.order.length; i++) {
-            var keepPlugin,
-                name = this.order[i],
-                args = this.plugins[name];
-
-            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
-            if (keepPlugin === false) {
-                this.order.splice(i, 1);
-                delete this.plugins[name];
-                i--;
-            }
-        }
-        delete infoArgs[0].args;
-        this.emit("afterExec", on, infoArgs, this);
-    },
-    executePlugin: function (plugin, on, infoArgs, args) {
-        var keepPlugin;
-        if (args.multiple) {
-            for (var i = 0; i < args.length; i++) {
-                infoArgs[0].args = args[i];
-                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
-                if (keepPlugin === false) {
-                    args.splice(i, 1);
-                    i--;
-                }
-            }
-            return !!args.length;
-        } else {
-            infoArgs[0].args = args;
-            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
-            return keepPlugin;
-        }
-    },
-    refreshOrder: function () {
-        var order = [],
-            plugins = this.plugins,
-            registeredPlugins = this.$ClassDefiner.registeredPlugins;
-
-        for (var key in plugins) {
-            if (key in registeredPlugins) {
-                order.push(key);
-            }
-        }
-
-        order.sort(function (a, b) {
-            return registeredPlugins[a].priority - registeredPlugins[b].priority;
-        });
-
-        return this.order = order;
-    }
-});
-
 BaseClass.registeredPlugins = {};
 BaseClass.addPlugin = function addPlugin(name, info) {
     if (ot.isObject(name)) {
@@ -958,6 +965,7 @@ BaseClass.addPlugin = function addPlugin(name, info) {
     } else {
         info.name = name;
     }
+    var $ClassDefiner = this;
 
     ot.softMerge(info, {
         level: "Component",
@@ -965,20 +973,35 @@ BaseClass.addPlugin = function addPlugin(name, info) {
     });
 
     var plugin = new Plugin(name, info, this);
-    
-    ot.navigate.setOwn(this.prototype, name, function () {
-        var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
-        return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
-    });
 
-    ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
+    if (info.addToInstances !== false) {
+        ot.navigate.setOwn(this.prototype, name, function () {
+            var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
+            return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
+        });
 
-    if (name.indexOf(".") !== -1) {
-        var firstProp = name.split(".")[0];
-        this.toInherit[firstProp] = this.prototype[firstProp];
+        if (name.indexOf(".") !== -1) {
+            var firstProp = name.split(".")[0];
+            this.toInherit[firstProp] = this.prototype[firstProp];
+        }
+    }
+
+    if (info.exportPlugin !== false) {
+        ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
+    }
+
+    if (info.globalize === true) {
+        ot.navigate.setOwn(ot.globalObj, name, function () {
+            var args = ot.toArray(arguments),
+                invokeValue = plugin.invoke(null, args, false);
+
+            $ClassDefiner.$$queuedPlugins.push({plugin: plugin, args: args});
+            return invokeValue;
+        });
     }
 
     this.registeredPlugins[name] = plugin;
+    return this;
 };
 
 var currentlyBuilding = [];

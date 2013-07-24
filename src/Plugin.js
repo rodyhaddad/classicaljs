@@ -5,7 +5,7 @@ function Plugin(name, info, $ClassDefiner) {
 }
 
 Plugin.prototype = {
-    invoke: function ($Class, args) {
+    invoke: function ($Class, args, callApply) {
         var invokeValue = this.onInvoke.apply(this, [
             {
                 $Class: $Class,
@@ -13,7 +13,9 @@ Plugin.prototype = {
             }
         ].concat(args));
 
-        this.apply($Class, args);
+        if (callApply !== false) {
+            this.apply($Class, args);
+        }
 
         return invokeValue;
     },
