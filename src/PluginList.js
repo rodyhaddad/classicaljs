@@ -13,7 +13,16 @@ PluginList.prototype = ot.inherit(EventEmitter.prototype, {
         this.order = null;
     },
     addPlugin: function (plugin, args) {
-        this.plugins[plugin.name] = args;
+        if (plugin.name in this.plugins && plugin.allowMultiple()) {
+            if (this.plugins[plugin.name].multiple) {
+                this.plugins[plugin.name].push(args);
+            } else {
+                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
+                this.plugins[plugin.name].multiple = true;
+            }
+        } else {
+            this.plugins[plugin.name] = args;
+        }
     },
     addPlugins: function (pluginsObject) {
         if (pluginsObject instanceof  PluginList) {
@@ -26,17 +35,16 @@ PluginList.prototype = ot.inherit(EventEmitter.prototype, {
         }
     },
     execute: function (on, infoArgs) {
-        var registeredPlugins = this.$ClassDefiner.registeredPlugins;
-
+        var regPlugins = this.$ClassDefiner.registeredPlugins;
         if (!this.order) this.refreshOrder();
 
         this.emit("beforeExec", on, infoArgs, this);
         for (var i = 0; i < this.order.length; i++) {
-            var name = this.order[i],
-                args = this.plugins[name], keepPlugin;
-            infoArgs[0].args = args;
+            var keepPlugin,
+                name = this.order[i],
+                args = this.plugins[name];
 
-            keepPlugin = registeredPlugins[name][on].apply(registeredPlugins[name], infoArgs.concat(args));
+            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
             if (keepPlugin === false) {
                 this.order.splice(i, 1);
                 delete this.plugins[name];
@@ -44,7 +52,25 @@ PluginList.prototype = ot.inherit(EventEmitter.prototype, {
             }
         }
         delete infoArgs[0].args;
-        this.emit("afterExec", this);
+        this.emit("afterExec", on, infoArgs, this);
+    },
+    executePlugin: function (plugin, on, infoArgs, args) {
+        var keepPlugin;
+        if (args.multiple) {
+            for (var i = 0; i < args.length; i++) {
+                infoArgs[0].args = args[i];
+                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
+                if (keepPlugin === false) {
+                    args.splice(i, 1);
+                    i--;
+                }
+            }
+            return !!args.length;
+        } else {
+            infoArgs[0].args = args;
+            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
+            return keepPlugin;
+        }
     },
     refreshOrder: function () {
         var order = [],

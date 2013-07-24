@@ -51,6 +51,9 @@ Plugin.prototype = {
             return this.info;
         }
     },
+    allowMultiple: function () {
+        return !!this.info.multiple;
+    },
     onDefinition: generateEventHandler("onDefinition"),
     onInstanceCreation: generateEventHandler("onInstanceCreation"),
     onInvoke: function () {
