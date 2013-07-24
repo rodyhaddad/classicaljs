@@ -963,14 +963,20 @@ BaseClass.addPlugin = function addPlugin(name, info) {
         level: "Component",
         priority: Plugin.priorities["default"]
     });
-    var plugin = new Plugin(name, info, this);
 
+    var plugin = new Plugin(name, info, this);
+    
     ot.navigate.setOwn(this.prototype, name, function () {
         var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
         return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
     });
 
     ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
+
+    if (name.indexOf(".") !== -1) {
+        var firstProp = name.split(".")[0];
+        this.toInherit[firstProp] = this.prototype[firstProp];
+    }
 
     this.registeredPlugins[name] = plugin;
 };
