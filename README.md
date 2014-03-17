@@ -6,7 +6,7 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
 ## Usage
   ```javascript
   
-  var Person = Class("Person")
+  var Person = Class("Person", function () {
   
     Private ("firstName");
     Private ("LastName");
@@ -23,7 +23,7 @@ Classical.js is an adaptation of the OOP concepts of classical programming langu
       return this.firstName + " " + this.lastName;
     });
     
-  End()
+  })
 
   
   var Programmer = Class("Programmer").Extends("Person")
