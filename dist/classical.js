@@ -1,4 +1,4 @@
-/*! ClassicalJS v0.0.0 24-07-2013 
+/*! ClassicalJS v0.0.0 21-09-2013 
 Copyright (c) 2013 rodyhaddad
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -524,7 +524,7 @@ function EventEmitter() {
 }
 
 EventEmitter.prototype = {
-    addListener: function (event, listener, context) {
+    on: function (event, listener, context) {
         var info = { listener: listener, context: context };
         if (!this.listeners) this.listeners = {};
 
@@ -533,15 +533,17 @@ EventEmitter.prototype = {
         } else {
             this.listeners[event].push(info);
         }
-
+        return this;
     },
     once: function (event, listener, context) {
-        this.addListener(event, function () {
+        function realListener() {
             listener.apply(context, arguments);
-            this.removeListener(event, listener);
-        }, this);
+            this.off(event, realListener);
+        }
+        this.on(event, realListener, this);
+        return this;
     },
-    removeListener: function (event, listener) {
+    off: function (event, listener) {
         if (this.listeners && this.listeners[event]) {
             var listeners = this.listeners[event];
             for (var i = 0, ii = listeners.length; i < ii; i++) {
@@ -551,6 +553,7 @@ EventEmitter.prototype = {
                 }
             }
         }
+        return this;
     },
     removeAllListeners: function (event) { /* [event] */
         if (ot.isUndefined(event)) {
@@ -558,6 +561,7 @@ EventEmitter.prototype = {
         } else if (this.listeners && this.listeners[event]) {
             this.listeners[event] = null;
         }
+        return this;
     },
     emit: function (event) {
         if (this.listeners && this.listeners[event]) {
@@ -566,105 +570,13 @@ EventEmitter.prototype = {
                 listenerInfo.listener.apply(listenerInfo.context, args);
             });
         }
+        return this;
     }
 };
 
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+EventEmitter.prototype.addListener = EventEmitter.prototype.on;
+EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
 EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
-
-function PluginList(component, $Class) {
-    EventEmitter.call(this);
-    this.component = component;
-    this.plugins = {};
-    this.$Class = $Class;
-    this.$ClassDefiner = $Class.$ClassDefiner;
-    this.order = null;
-}
-
-PluginList.prototype = ot.inherit(EventEmitter.prototype, {
-    reset: function () {
-        this.plugins = {};
-        this.order = null;
-    },
-    addPlugin: function (plugin, args) {
-        if (plugin.name in this.plugins && plugin.allowMultiple()) {
-            if (this.plugins[plugin.name].multiple) {
-                this.plugins[plugin.name].push(args);
-            } else {
-                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
-                this.plugins[plugin.name].multiple = true;
-            }
-        } else {
-            this.plugins[plugin.name] = args;
-        }
-    },
-    addPlugins: function (pluginsObject) {
-        if (pluginsObject instanceof  PluginList) {
-            this.addPlugins(pluginsObject.plugins);
-        } else {
-            var registeredPlugins = this.$ClassDefiner.registeredPlugins;
-            ot.forEach(pluginsObject, function (args, name) {
-                this.addPlugin(registeredPlugins[name], args);
-            }, this);
-        }
-    },
-    execute: function (on, infoArgs) {
-        var regPlugins = this.$ClassDefiner.registeredPlugins;
-        if (!this.order) this.refreshOrder();
-
-        this.emit("beforeExec", on, infoArgs, this);
-        for (var i = 0; i < this.order.length; i++) {
-            var keepPlugin,
-                name = this.order[i],
-                args = this.plugins[name];
-
-            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
-            if (keepPlugin === false) {
-                this.order.splice(i, 1);
-                delete this.plugins[name];
-                i--;
-            }
-        }
-        delete infoArgs[0].args;
-        this.emit("afterExec", on, infoArgs, this);
-    },
-    executePlugin: function (plugin, on, infoArgs, args) {
-        var keepPlugin;
-        if (args.multiple) {
-            for (var i = 0; i < args.length; i++) {
-                infoArgs[0].args = args[i];
-                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
-                if (keepPlugin === false) {
-                    args.splice(i, 1);
-                    i--;
-                }
-            }
-            return !!args.length;
-        } else {
-            infoArgs[0].args = args;
-            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
-            return keepPlugin;
-        }
-    },
-    refreshOrder: function () {
-        var order = [],
-            plugins = this.plugins,
-            registeredPlugins = this.$ClassDefiner.registeredPlugins;
-
-        for (var key in plugins) {
-            if (key in registeredPlugins) {
-                order.push(key);
-            }
-        }
-
-        order.sort(function (a, b) {
-            return registeredPlugins[a].priority - registeredPlugins[b].priority;
-        });
-
-        return this.order = order;
-    }
-});
 
 function BaseClass(args) {
     args = args.isParams ? args : ot.toArray(arguments);
@@ -706,6 +618,7 @@ function BaseClass(args) {
     return this.classConstructor;
 }
 ot.merge(BaseClass, {
+    EventEmitter: EventEmitter,
     valuesToExport: {
         Config: exportClassFn("Config"),
         End: exportClassFn("End")
@@ -956,6 +869,99 @@ function generateEventHandler(name) {
         return continueExec;
     };
 }
+
+function PluginList(component, $Class) {
+    EventEmitter.call(this);
+    this.component = component;
+    this.plugins = {};
+    this.$Class = $Class;
+    this.$ClassDefiner = $Class.$ClassDefiner;
+    this.order = null;
+}
+
+PluginList.prototype = ot.inherit(EventEmitter.prototype, {
+    reset: function () {
+        this.plugins = {};
+        this.order = null;
+    },
+    addPlugin: function (plugin, args) {
+        if (plugin.name in this.plugins && plugin.allowMultiple()) {
+            if (this.plugins[plugin.name].multiple) {
+                this.plugins[plugin.name].push(args);
+            } else {
+                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
+                this.plugins[plugin.name].multiple = true;
+            }
+        } else {
+            this.plugins[plugin.name] = args;
+        }
+    },
+    addPlugins: function (pluginsObject) {
+        if (pluginsObject instanceof  PluginList) {
+            this.addPlugins(pluginsObject.plugins);
+        } else {
+            var registeredPlugins = this.$ClassDefiner.registeredPlugins;
+            ot.forEach(pluginsObject, function (args, name) {
+                this.addPlugin(registeredPlugins[name], args);
+            }, this);
+        }
+    },
+    execute: function (on, infoArgs) {
+        var regPlugins = this.$ClassDefiner.registeredPlugins;
+        if (!this.order) this.refreshOrder();
+
+        this.emit("beforeExec", on, infoArgs, this);
+        for (var i = 0; i < this.order.length; i++) {
+            var keepPlugin,
+                name = this.order[i],
+                args = this.plugins[name];
+
+            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
+            if (keepPlugin === false) {
+                this.order.splice(i, 1);
+                delete this.plugins[name];
+                i--;
+            }
+        }
+        delete infoArgs[0].args;
+        this.emit("afterExec", on, infoArgs, this);
+    },
+    executePlugin: function (plugin, on, infoArgs, args) {
+        var keepPlugin;
+        if (args.multiple) {
+            for (var i = 0; i < args.length; i++) {
+                infoArgs[0].args = args[i];
+                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
+                if (keepPlugin === false) {
+                    args.splice(i, 1);
+                    i--;
+                }
+            }
+            return !!args.length;
+        } else {
+            infoArgs[0].args = args;
+            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
+            return keepPlugin;
+        }
+    },
+    refreshOrder: function () {
+        var order = [],
+            plugins = this.plugins,
+            registeredPlugins = this.$ClassDefiner.registeredPlugins;
+
+        for (var key in plugins) {
+            if (key in registeredPlugins) {
+                order.push(key);
+            }
+        }
+
+        order.sort(function (a, b) {
+            return registeredPlugins[a].priority - registeredPlugins[b].priority;
+        });
+
+        return this.order = order;
+    }
+});
 
 BaseClass.registeredPlugins = {};
 BaseClass.addPlugin = function addPlugin(name, info) {
