@@ -38,6 +38,7 @@ function BaseClass(args) {
     return this.classConstructor;
 }
 ot.merge(BaseClass, {
+    EventEmitter: EventEmitter,
     valuesToExport: {
         Config: exportClassFn("Config"),
         End: exportClassFn("End")

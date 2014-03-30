@@ -45,8 +45,19 @@ module.exports = function (grunt) {
         },
         watch: {
             src: {
-                files: '<%= concat.dist.src %>',
-                tasks: ['jshint', 'concat', 'uglify']
+                files: ['<%= concat.dist.src %>', 'test/spec/**.js'],
+                tasks: ['jshint', 'concat', 'uglify', 'karma:watchUnit:run']
+            }
+        },
+
+        karma: {
+            unit: {
+                configFile: 'karma.conf.js',
+                singleRun: true
+            },
+            watchUnit: {
+                configFile: 'karma.conf.js',
+                background: true
             }
         }
     });
@@ -55,11 +66,15 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-karma');
 
     grunt.registerTask('lint', ['jshint']);
 
     grunt.registerTask('minify', ['concat', 'uglify']);
 
-    grunt.registerTask('default', ['jshint', 'concat', 'uglify']);
+    grunt.registerTask('test', ['karma:unit']);
+    grunt.registerTask('autotest', ['karma:watchUnit', 'watch']);
+
+    grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'karma:watchUnit:run']);
 
 };

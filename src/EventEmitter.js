@@ -3,7 +3,7 @@ function EventEmitter() {
 }
 
 EventEmitter.prototype = {
-    addListener: function (event, listener, context) {
+    on: function (event, listener, context) {
         var info = { listener: listener, context: context };
         if (!this.listeners) this.listeners = {};
 
@@ -12,15 +12,17 @@ EventEmitter.prototype = {
         } else {
             this.listeners[event].push(info);
         }
-
+        return this;
     },
     once: function (event, listener, context) {
-        this.addListener(event, function () {
+        function realListener() {
             listener.apply(context, arguments);
-            this.removeListener(event, listener);
-        }, this);
+            this.off(event, realListener);
+        }
+        this.on(event, realListener, this);
+        return this;
     },
-    removeListener: function (event, listener) {
+    off: function (event, listener) {
         if (this.listeners && this.listeners[event]) {
             var listeners = this.listeners[event];
             for (var i = 0, ii = listeners.length; i < ii; i++) {
@@ -30,6 +32,7 @@ EventEmitter.prototype = {
                 }
             }
         }
+        return this;
     },
     removeAllListeners: function (event) { /* [event] */
         if (ot.isUndefined(event)) {
@@ -37,6 +40,7 @@ EventEmitter.prototype = {
         } else if (this.listeners && this.listeners[event]) {
             this.listeners[event] = null;
         }
+        return this;
     },
     emit: function (event) {
         if (this.listeners && this.listeners[event]) {
@@ -45,9 +49,10 @@ EventEmitter.prototype = {
                 listenerInfo.listener.apply(listenerInfo.context, args);
             });
         }
+        return this;
     }
 };
 
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+EventEmitter.prototype.addListener = EventEmitter.prototype.on;
+EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
 EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
