@@ -1,4 +1,14 @@
 module.exports = function (grunt) {
+    var files = [
+        "src/classicaljs.prefix",
+        "libs/*.js",
+        "src/EventEmitter.js",
+        "src/createDynamicNameFn.js",
+        "src/BaseClass.js",
+        "src/*.js",
+        "src/**.js",
+        "src/classicaljs.suffix"
+    ];
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -10,17 +20,7 @@ module.exports = function (grunt) {
                 banner: '/*! <%= pkg.name %> v<%= pkg.version %> <%= grunt.template.today("dd-mm-yyyy") %> \n<%= LICENSE %>\n*/\n\n'
             },
             dist: {
-                src: [
-                    "src/classicaljs.prefix",
-                    "libs/objectTools.js/dist/objectTools.js",
-                    "src/baseConfig.js",
-                    "src/EventEmitter.js",
-                    "src/*.js",
-                    "src/handleParams.js",
-                    "src/getComponents.js",
-                    "src/Plugins/*.js",
-                    "src/classicaljs.suffix"
-                ],
+                src: files,
                 dest: 'dist/<%= destName %>.js'
             }
         },
@@ -35,7 +35,7 @@ module.exports = function (grunt) {
             }
         },
         jshint: {
-            files: ['src/*.js'],
+            files: ['src/**.js'],
             options: {
                 boss: true,
                 globals: {
@@ -45,8 +45,8 @@ module.exports = function (grunt) {
         },
         watch: {
             src: {
-                files: ['<%= concat.dist.src %>', 'test/spec/**.js'],
-                tasks: ['jshint', 'concat', 'uglify', 'karma:watchUnit:run']
+                files: files.concat(['test/spec/*.js', 'test/spec/**.js']),
+                tasks: ['concat', 'uglify']
             }
         },
 
@@ -56,8 +56,7 @@ module.exports = function (grunt) {
                 singleRun: true
             },
             watchUnit: {
-                configFile: 'karma.conf.js',
-                background: true
+                configFile: 'karma.conf.js'
             }
         }
     });
@@ -70,11 +69,13 @@ module.exports = function (grunt) {
 
     grunt.registerTask('lint', ['jshint']);
 
-    grunt.registerTask('minify', ['concat', 'uglify']);
+    grunt.registerTask('build', ['concat', 'uglify']);
 
-    grunt.registerTask('test', ['karma:unit']);
-    grunt.registerTask('autotest', ['karma:watchUnit', 'watch']);
 
-    grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'karma:watchUnit:run']);
+    grunt.registerTask('test', ['build', 'karma:unit']);
+    grunt.registerTask('autotest', ['build', 'karma:watchUnit']);
+
+
+    grunt.registerTask('default', ['lint', 'build']);
 
 };
