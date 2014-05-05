@@ -14,8 +14,13 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'dist/classical.min.js',
-      'test/spec/*.js',
+      'libs/**.js',
+      'src/EventEmitter.js',
+      'src/createDynamicNameFn.js',
+      'src/BaseClass.js',
+      'src/*.js',
+      'src/**.js',
+      'test/*.js',
       'test/spec/**.js'
     ],
 
