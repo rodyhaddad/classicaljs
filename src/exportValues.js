@@ -1,60 +1,54 @@
-var currentlyBuilding = [];
+//var currentlyBuilding = [];
 
 function exportClassFn(road) {
-    if (road.indexOf(".") !== -1) {
-        return function () {
-            var $Class = this.$Class || currentlyBuilding[0];
-            var fn = ot.navigate.get($Class, road);
-            if (ot.isFn(fn)) {
-                var val = fn.apply($Class, arguments);
-                return val === $Class ? $Class.classConstructor : val;
-            } else {
-                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
-            }
-        };
+    var getFn;
+    if (ot.isFn(road)) {
+        getFn = function () { return road; };
     } else {
-        return function () {
-            var $Class = this.$Class || currentlyBuilding[0];
-            if (ot.isFn($Class[road])) {
-                var val = $Class[road].apply($Class, arguments);
-                return val === $Class ? $Class.classConstructor : val;
+        if (road.indexOf(".") === -1) {
+            getFn = function ($class) { return $class[road]; };
+        } else {
+            getFn = function ($class) { return ot.navigate.get($class, road); };
+        }
+    }
+
+    exportedFn.valueOf = function () {
+        return this() || exportedFn;
+    };
+    return exportedFn;
+    function exportedFn() {
+        var $class = this.$class || currentlyBuilding[0];
+        if ($class instanceof BaseClass) {
+            var fn = getFn($class);
+            if (ot.isFn(fn)) {
+                var val = fn.call($class, ot.toArray(arguments));
+                return val === $class ? $class.classConstructor : val;
             } else {
-                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
+                throw "The method '" + road + "' does not exist on Class: " + $class.name;
             }
-        };
+        }
     }
 }
 
-function addExport(exportTo, $ClassDefiner) {
-    var valuesToExport = $ClassDefiner.valuesToExport,
-        oldValues = exportTo.$$oldValues = {};
-    ot.forEach(valuesToExport, function (value, key) {
-        if (exportTo.hasOwnProperty(key)) {
-            oldValues[key] = exportTo[key];
-        }
-        exportTo[key] = value;
-    });
-    if (exportTo.$Class instanceof BaseClass) {
-        currentlyBuilding.push(exportTo.$Class);
-    }
-}
-
-function removeExport(exportedTo, $ClassDefiner) {
-    var valuesToExport = $ClassDefiner.valuesToExport;
-    if (exportedTo.$Class instanceof BaseClass) {
-        if (currentlyBuilding[0] === exportedTo.$Class) {
-            currentlyBuilding.shift();
-        }
-    }
-    if (exportedTo.$$oldValues) {
-        var oldValues = exportedTo.$$oldValues;
-        ot.forEach(valuesToExport, function (value, key) {
-            if (oldValues[key]) {
-                exportedTo[key] = oldValues[key];
+// Globalize .fnToExport
+BaseClass.eventListeners.push({
+    beforeDefined: function ($class) {
+        var oldValues = $class.$classDefiner.$$oldGlobalValues = {}; // hold the old global vals
+        ot.forEach($class.$classDefiner.fnToExport, function (val, key) {
+            oldValues[key] = ot.globalObj[key];
+            ot.globalObj[key] = $class.classConstructor[key] = val;
+        }, this, true);
+    },
+    afterDefined: function ($class) {
+        var oldValues = $class.$classDefiner.$$oldGlobalValues;
+        ot.forEach(oldValues, function (oldVal, key) {
+            delete $class.classConstructor[key];
+            if (ot.isUndefined(oldVal)) {
+                delete ot.globalObj[key];
             } else {
-                delete exportedTo[key];
+                ot.globalObj[key] = oldVal;
             }
         });
-        delete exportedTo.$$oldValues;
+        $class.$classDefiner.$$oldGlobalValues = {};
     }
-}
+});

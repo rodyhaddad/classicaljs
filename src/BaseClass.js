@@ -1,118 +1,85 @@
-function BaseClass(args) {
-    args = args.isParams ? args : ot.toArray(arguments);
-    if (!(this instanceof BaseClass)) {
-        args.isParams = true;
-        return new BaseClass(args);
-    }
+var currentlyBuilding = [];
+var BaseClass = ClassDefinerFactory('BaseClass');
 
-    var $Class = this.$Class = this;
-    this.$ClassDefiner = BaseClass;
+function ClassDefinerFactory(definerName, parent) {
+    var Class = createDynamicNameFn(definerName, {
+        asConstructor: handleNewClass,
+        asFunction: handleNewClass
+    });
 
-    ot.forEach(BaseClass.toInherit, function (value, key) {
-        this[key] = ot.recursiveInherit(value, null, function (obj) {
-            obj.$Class = $Class;
+    ot.merge(Class, parent || {
+        ot: ot,
+        EventEmitter: EventEmitter,
+        child: function (name) {
+            return ClassDefinerFactory(name, this);
+        },
+        destroy: function () {
+            if (parent) {
+                ot.unbindInherit(this.prototype);
+                ot.unbindInherit(this.fnToExport);
+            }
+        }
+    });
+
+    if (!parent) {
+        Class.fnToExport = {};
+        Class.eventListeners = [];
+        Class.prototype = ot.inherit(EventEmitter.prototype, {
+            addComponent: function (component) {
+                this.components.push(component);
+                this.emit('newComponent', [component, this]);
+            },
+            getLastComponent: function () {
+                return this.components[this.components.length-1];
+            }
         });
-    }, this);
-
-    this.params = this.handleParams(args);
-    this.name = this.params.name || "Anonymous";
-    this.components = [];
-
-    this.classConstructor = this.createClassConstructor();
-
-    this.ClassPluginsFirst = new PluginList(null, this);
-    this.ClassPluginsLast = new PluginList(null, this);
-    this.queuedComponentPlugins = new PluginList(false, this);
-
-    ot.forEach(this.$ClassDefiner.$$queuedPlugins, function (queuedPlugin) {
-        queuedPlugin.plugin.apply(this, queuedPlugin.args);
-    }, this);
-
-    addExport(this.classConstructor, this.$ClassDefiner);
-    addExport(ot.globalObj, this.$ClassDefiner);
-    if (this.params.definition) {
-        this.params.definition.call(this.classConstructor);
-        this.End();
+    } else {
+        Class.fnToExport = ot.boundInherit(parent.fnToExport);
+        Class.eventListeners = [parent.eventListeners];
+        Class.prototype = ot.boundInherit(parent.prototype);
     }
 
-    return this.classConstructor;
+    Class.prototype.constructor = Class;
+
+    return Class;
+
+    function handleNewClass(name, definitionFn) {
+        if (!(this instanceof Class)) {
+            return new Class(name, definitionFn);
+        }
+        EventEmitter.call(this);
+
+        this.$classDefiner = Class;
+
+        this.name = name;
+        this.classConstructor = createDynamicNameFn(name, {
+            asConstructor: ot.noop,
+            asFunction: ot.noop
+        });
+
+        this.$$usedPlugins = {};
+
+        this.classConstructor.$class = this;
+        this.classConstructor.prototype.$class = this;
+
+        // add listeners
+        ot.forEach(Class.eventListeners, function addListeners(listeners) {
+            if (ot.isArray(listeners)) {
+                ot.forEach(listeners, addListeners, this);
+            } else {
+                this.on(listeners);
+            }
+        }, this);
+
+        this.emit('beforeDefined', [this]);
+
+        this.components = [];
+        currentlyBuilding.unshift(this);
+        definitionFn.call(this.classConstructor);
+        currentlyBuilding.shift();
+
+        this.emit('defined', [this]);
+        this.emit('afterDefined', [this]);
+        return this.classConstructor;
+    }
 }
-ot.merge(BaseClass, {
-    EventEmitter: EventEmitter,
-    valuesToExport: {
-        Config: exportClassFn("Config"),
-        End: exportClassFn("End")
-    },
-    config: baseConfig,
-    toInherit: {
-        config: baseConfig
-    },
-    Config: function (config) {
-        ot.deepMerge(this.config, config);
-    },
-    $$queuedPlugins: []
-});
-
-BaseClass.prototype = {
-    Config: BaseClass.Config,
-    End: function () {
-        removeExport(this.classConstructor, this.$ClassDefiner);
-        removeExport(ot.globalObj, this.$ClassDefiner);
-        var infoArgs = [
-            {
-                $Class: this.$Class
-            }
-        ];
-
-        this.ClassPluginsFirst.execute("onDefinition", infoArgs);
-        ot.forEach(this.components, function (component) {
-            component.pluginList.execute("onDefinition", [
-                ot.inherit(infoArgs[0], {
-                    component: component
-                })
-            ]);
-        });
-        this.ClassPluginsLast.execute("onDefinition", infoArgs);
-    },
-    addComponent: function (component) {
-        this.components.push(component);
-    },
-    createClassConstructor: function () {
-        /*jshint evil:true */
-        var classConstructor = new Function("$Class", "toArray",
-            "" +
-                "function " + this.name + "(){ " +
-                "    if(this instanceof " + this.name + ") {" +
-                "        return $Class.onClassConstructorCall(this, toArray(arguments)); " +
-                "    } else {" +
-                "        return $Class.onClassFunctionCall(toArray(arguments))" +
-                "    }" +
-                "} " +
-                "return " + this.name + ";")(this, ot.toArray);
-
-        classConstructor.$Class = this;
-        classConstructor.prototype.$Class = this;
-        return classConstructor;
-    },
-    onClassConstructorCall: function (instance, args) {
-        var infoArgs = [
-            {
-                $Class: this.$Class,
-                instance: instance
-            }
-        ];
-
-        this.ClassPluginsFirst.execute("onInstanceCreation", infoArgs);
-        ot.forEach(this.components, function (component) {
-            component.pluginList.execute("onInstanceCreation", [
-                ot.inherit(infoArgs[0], {
-                    component: component
-                })
-            ]);
-        });
-        this.ClassPluginsLast.execute("onInstanceCreation", infoArgs);
-    },
-    onClassFunctionCall: function (args) {
-
-    }
-};

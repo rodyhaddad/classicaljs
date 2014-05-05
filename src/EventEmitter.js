@@ -4,31 +4,36 @@ function EventEmitter() {
 
 EventEmitter.prototype = {
     on: function (event, listener, context) {
-        var info = { listener: listener, context: context };
-        if (!this.listeners) this.listeners = {};
-
-        if (!this.listeners[event]) {
-            this.listeners[event] = [info];
-        } else {
-            this.listeners[event].push(info);
+        if (ot.isObject(event)) {
+            context = listener;
+            listener = event;
+            ot.forEach(listener, function (listener, event) {
+                this.on(event, listener, context);
+            }, this);
+            return;
         }
+        var info = { listener: listener, context: context || this };
+        if (!this.listeners) this.listeners = {};
+        if (!this.listeners[event]) this.listeners[event] = [];
+
+        this.listeners[event].push(info);
         return this;
     },
     once: function (event, listener, context) {
-        function realListener() {
+        context = context || this;
+        function onceListener() {
             listener.apply(context, arguments);
-            this.off(event, realListener);
+            this.off(event, onceListener);
         }
-        this.on(event, realListener, this);
+        this.on(event, onceListener, this);
         return this;
     },
     off: function (event, listener) {
         if (this.listeners && this.listeners[event]) {
             var listeners = this.listeners[event];
-            for (var i = 0, ii = listeners.length; i < ii; i++) {
+            for (var i = listeners.length-1; i >= 0; i--) {
                 if (listeners[i].listener === listener) {
                     listeners.splice(i, 1);
-                    break;
                 }
             }
         }
@@ -42,10 +47,11 @@ EventEmitter.prototype = {
         }
         return this;
     },
-    emit: function (event) {
+    emit: function (event, args) {
         if (this.listeners && this.listeners[event]) {
-            var listeners = this.listeners[event], args = ot.toArray(arguments).slice(1);
-            ot.forEach(listeners, function (listenerInfo) {
+            var listeners = this.listeners[event];
+            // we slice in case the listener array gets changed while looping
+            ot.forEach(listeners.slice(), function (listenerInfo) {
                 listenerInfo.listener.apply(listenerInfo.context, args);
             });
         }
