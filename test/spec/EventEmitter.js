@@ -1,4 +1,4 @@
-// TODO reconsider the use of `fired`
+// TODO reconsider the use of `fired` (spies are better I believe)
 describe('Class.EventEmitter', function () {
     var evtEmitter, fired;
 
@@ -25,6 +25,32 @@ describe('Class.EventEmitter', function () {
 
             evtEmitter.emit('event');
             expect(fired).toBe(2);
+        });
+
+        it('should accept an object of events and listeners', function () {
+            var context = {};
+
+            evtEmitter.on({
+                event1: function () {
+                    fired++;
+                    expect(this).toBe(context);
+                },
+                event2: function () {
+                    fired++;
+                    expect(this).toBe(context);
+                }
+            }, context);
+
+            evtEmitter.emit('event1');
+            expect(fired).toBe(1);
+
+            evtEmitter.emit('event2');
+            expect(fired).toBe(2);
+
+            evtEmitter.emit('event1');
+            evtEmitter.emit('event2');
+            expect(fired).toBe(4);
+
         });
     });
 
