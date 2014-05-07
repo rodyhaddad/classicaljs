@@ -145,11 +145,14 @@ describe('addDecorator', function () {
                 Component();
             });
 
-            aClass.$class.emit('event1');
-            aClass.$class.emit('event2');
+            aClass.$class.emit('event1', [1]);
+            aClass.$class.emit('event2', [true]);
 
             expect(info.on.event1.calls.count()).toBe(1);
             expect(info.on.event2.calls.count()).toBe(1);
+
+            expect(info.on.event1.calls.first()).toEqual({object: info, args: [1]});
+            expect(info.on.event2.calls.first()).toEqual({object: info, args: [true]});
         });
     });
 });

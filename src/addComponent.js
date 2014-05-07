@@ -2,7 +2,7 @@ BaseClass.addComponent = function (name, info) {
     function handleComponentCreation(args) {
         this.addComponent(info.createComponent.apply(info, [this].concat(args)));
         if (info.on && !this.$$usedPlugins[name]) {
-            this.on(info.on);
+            this.on(info.on, info);
         }
         this.$$usedPlugins[name] = true;
     }

@@ -9,7 +9,7 @@ BaseClass.addDecorator = function (name, info) {
             }, this);
         }
         if (info.on && !this.$$usedPlugins[name]) {
-            this.on(info.on);
+            this.on(info.on, info);
         }
         this.$$usedPlugins[name] = true;
     }
