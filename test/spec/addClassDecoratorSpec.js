@@ -54,6 +54,7 @@ describe('addClassDecorator', function () {
             expect(typeof this.decorator).toBe('function');
             +this.decorator(1, true);
         });
+        expect(aClass.decorator).toBeUndefined();
 
         expect(info.decorate).toHaveBeenCalledWith(aClass.$class, 1, true);
     });

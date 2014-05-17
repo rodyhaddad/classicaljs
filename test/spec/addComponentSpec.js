@@ -64,6 +64,7 @@ describe('addComponent', function () {
             expect(typeof this.Component).toBe('function');
             this.Component(1, true)
         });
+        expect(aClass.Component).toBeUndefined();
 
         expect(info.createComponent).toHaveBeenCalledWith(aClass.$class, 1, true);
     });

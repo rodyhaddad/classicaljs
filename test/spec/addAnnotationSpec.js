@@ -121,6 +121,7 @@ describe('addAnnotation', function () {
             +this.annotation(1, true);
             this.Component();
         });
+        expect(aClass.annotation).toBeUndefined();
 
         expect(info.annotation).toHaveBeenCalledWith(components[0], aClass.$class, 1, true);
     });

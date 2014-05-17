@@ -84,6 +84,7 @@ describe('addDecorator', function () {
             +this.decorator(1, true);
             this.Component();
         });
+        expect(aClass.decorator).toBeUndefined();
 
         expect(info.decorate).toHaveBeenCalledWith(components[0], aClass.$class, 1, true);
     });
