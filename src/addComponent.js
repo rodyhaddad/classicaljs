@@ -1,14 +1,11 @@
 BaseClass.addComponent = function (name, info) {
-    function handleComponentCreation(args) {
-        this.addComponent(info.createComponent.apply(info, [this].concat(args)));
-        if (info.on && !this.$$usedPlugins[name]) {
-            this.on(info.on, info);
+    this.addClassDecorator(name, {
+        on: info.on && function ($class) {
+            var on = ot.result(info, 'on', [$class]);
+            $class.on(on, info);
+        },
+        decorate: function ($class) {
+            $class.addComponent(info.createComponent.apply(info, ot.toArray(arguments)));
         }
-        this.$$usedPlugins[name] = true;
-    }
-
-    var exportFn = exportClassFn(handleComponentCreation);
-
-    ot.navigate.set(this.fnToExport, name, exportFn, true);
-    //ot.navigate.set(this.prototype, name, exportFn, true);
+    });
 };
