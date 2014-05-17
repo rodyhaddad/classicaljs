@@ -6,5 +6,6 @@ function createFnSpy(fn) {
 }
 
 afterEach(function () {
-    BaseClass.fnToExport = {};
+    BaseClass.destroy();
+    BaseClass = createBaseClass();
 });

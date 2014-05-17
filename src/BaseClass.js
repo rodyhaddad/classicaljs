@@ -1,5 +1,26 @@
 var currentlyBuilding = [];
-var BaseClass = ClassDefinerFactory('BaseClass');
+var BaseClass = createBaseClass();
+
+function createBaseClass() {
+    var Class = ClassDefinerFactory('BaseClass');
+    Class.addClassDecorator = addClassDecorator;
+    Class.addComponent = addComponent;
+    Class.addDecorator = addDecorator;
+    Class.addAnnotation = addAnnotation;
+
+    Class.eventListeners.push(fnToExportHandlers);
+    Class.eventListeners.push({
+        beforeDefined: function ($class) {
+            var queuedDecorators = $class.$classDefiner.queuedDecorators;
+            ot.forEach(queuedDecorators, function (decorator) {
+                decorator($class);
+            });
+            queuedDecorators.length = 0;
+        }
+    });
+
+    return Class;
+}
 
 function ClassDefinerFactory(definerName, parent) {
     var ClassDefiner = createDynamicNameFn(definerName, {

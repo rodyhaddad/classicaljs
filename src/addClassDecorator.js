@@ -1,14 +1,4 @@
-BaseClass.eventListeners.push({
-    beforeDefined: function ($class) {
-        var queuedDecorators = $class.$classDefiner.queuedDecorators;
-        ot.forEach(queuedDecorators, function (decorator) {
-            decorator($class);
-        });
-        queuedDecorators.length = 0;
-    }
-});
-
-BaseClass.addClassDecorator = function (name, info) {
+function addClassDecorator(name, info) {
     var $classDefiner = this;
     var queuedDecorators = $classDefiner.queuedDecorators;
     if (info.globalize) {
@@ -16,6 +6,14 @@ BaseClass.addClassDecorator = function (name, info) {
             var args = ot.toArray(arguments);
             queuedDecorators.push(function ($class) {
                 callDecorator.call($class, args);
+            });
+        });
+        $classDefiner.on('destroy', function () {
+            ot.navigate(ot.globalObj, name, function (value, key, i, road) {
+                if (i === road.length - 1) {
+                    delete this[key];
+                    return false;
+                }
             });
         });
     } else {

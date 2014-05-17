@@ -1,4 +1,4 @@
-BaseClass.addDecorator = function (name, info) {
+function addDecorator(name, info) {
 
     this.addClassDecorator(name, {
         on: info.on && function ($class) {

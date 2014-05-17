@@ -1,5 +1,3 @@
-//var currentlyBuilding = [];
-
 function exportClassFn(road) {
     var getFn;
     if (ot.isFn(road)) {
@@ -30,8 +28,9 @@ function exportClassFn(road) {
     }
 }
 
+// TODO refactor this
 // Globalize .fnToExport
-BaseClass.eventListeners.push({
+var fnToExportHandlers = {
     beforeDefined: function ($class) {
         var oldValues = $class.$classDefiner.$$oldGlobalValues = {}; // hold the old global vals
         ot.forEach($class.$classDefiner.fnToExport, function (val, key) {
@@ -51,4 +50,4 @@ BaseClass.eventListeners.push({
         });
         $class.$classDefiner.$$oldGlobalValues = {};
     }
-});
+};

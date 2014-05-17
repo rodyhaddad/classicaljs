@@ -1,4 +1,4 @@
-BaseClass.addComponent = function (name, info) {
+function addComponent(name, info) {
     this.addClassDecorator(name, {
         on: info.on && function ($class) {
             var on = ot.result(info, 'on', [$class]);

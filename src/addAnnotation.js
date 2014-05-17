@@ -1,4 +1,4 @@
-BaseClass.addAnnotation = function (name, info) {
+function addAnnotation(name, info) {
     this.addDecorator(name, {
         decorate: function (component) {
             component.annotations = component.annotations || [];
