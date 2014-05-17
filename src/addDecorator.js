@@ -1,21 +1,19 @@
 BaseClass.addDecorator = function (name, info) {
-    function handleAnnotationAddition(args) {
-        var lastComponent;
-        if (info.after && ot.result(info, 'after', [lastComponent = this.getLastComponent(), this].concat(args))) {
-            info.decorate.apply(info, [lastComponent, this].concat(args));
-        } else {
-            this.once('newComponent', function (component) {
-                info.decorate.apply(info, [component, this].concat(args));
-            }, this);
-        }
-        if (info.on && !this.$$usedPlugins[name]) {
-            this.on(info.on, info);
-        }
-        this.$$usedPlugins[name] = true;
-    }
 
-    var exportFn = exportClassFn(handleAnnotationAddition);
-
-    ot.navigate.set(this.fnToExport, name, exportFn, true);
-    //ot.navigate.set(this.prototype, name, exportFn, true);
+    this.addClassDecorator(name, {
+        on: info.on && function ($class) {
+            var on = ot.result(info, 'on', [$class]);
+            $class.on(on, info);
+        },
+        decorate: function($class) {
+            var lastComponent, args = ot.toArray(arguments);
+            if (info.after && ot.result(info, 'after', [lastComponent = $class.getLastComponent()].concat(args))) {
+                info.decorate.apply(info, [lastComponent].concat(args));
+            } else {
+                $class.once('newComponent', function (component) {
+                    info.decorate.apply(info, [component].concat(args));
+                }, this);
+            }
+        }
+    });
 };
