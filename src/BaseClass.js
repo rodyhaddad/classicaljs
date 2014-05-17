@@ -2,29 +2,32 @@ var currentlyBuilding = [];
 var BaseClass = ClassDefinerFactory('BaseClass');
 
 function ClassDefinerFactory(definerName, parent) {
-    var Class = createDynamicNameFn(definerName, {
+    var ClassDefiner = createDynamicNameFn(definerName, {
         asConstructor: handleNewClass,
         asFunction: handleNewClass
     });
 
-    ot.merge(Class, parent || {
+    ot.merge(ClassDefiner, parent || {
         ot: ot,
         EventEmitter: EventEmitter,
         child: function (name) {
-            return ClassDefinerFactory(name, this);
+            var childClassDefiner = ClassDefinerFactory(name, this);
+            this.events.emit('newChild', [childClassDefiner]);
+            return childClassDefiner;
         },
         destroy: function () {
             if (parent) {
                 ot.unbindInherit(this.prototype);
                 ot.unbindInherit(this.fnToExport);
             }
+            this.events.emit('destroy');
         }
     });
 
     if (!parent) {
-        Class.fnToExport = {};
-        Class.eventListeners = [];
-        Class.prototype = ot.inherit(EventEmitter.prototype, {
+        ClassDefiner.fnToExport = {};
+        ClassDefiner.eventListeners = [];
+        ClassDefiner.prototype = ot.inherit(EventEmitter.prototype, {
             addComponent: function (component) {
                 this.components.push(component);
                 this.emit('newComponent', [component, this]);
@@ -34,37 +37,45 @@ function ClassDefinerFactory(definerName, parent) {
             }
         });
     } else {
-        Class.fnToExport = ot.boundInherit(parent.fnToExport);
-        Class.eventListeners = [parent.eventListeners];
-        Class.prototype = ot.boundInherit(parent.prototype);
+        ClassDefiner.fnToExport = ot.boundInherit(parent.fnToExport);
+        ClassDefiner.eventListeners = [parent.eventListeners];
+        ClassDefiner.prototype = ot.boundInherit(parent.prototype);
     }
-    Class.queuedDecorators = [];
 
-    Class.prototype.constructor = Class;
+    ClassDefiner.queuedDecorators = [];
+    ClassDefiner.events = new EventEmitter();
 
-    return Class;
+    ClassDefiner.prototype.constructor = ClassDefiner;
+
+    return ClassDefiner;
 
     function handleNewClass(name, definitionFn) {
-        if (!(this instanceof Class)) {
-            return new Class(name, definitionFn);
+        if (!(this instanceof ClassDefiner)) {
+            return new ClassDefiner(name, definitionFn);
         }
         EventEmitter.call(this);
 
-        this.$classDefiner = Class;
+        var Class = this;
+
+        this.$classDefiner = ClassDefiner;
 
         this.name = name;
         this.classConstructor = createDynamicNameFn(name, {
-            asConstructor: ot.noop,
+            asConstructor: function () {
+                Class.emit('newInstance', [this, ot.toArray(arguments)]);
+            },
             asFunction: ot.noop
         });
-
-        this.$$usedPlugins = {};
-
         this.classConstructor.$class = this;
         this.classConstructor.prototype.$class = this;
 
+        this.$$usedPlugins = {};
+        this.components = [];
+
+        ClassDefiner.events.emit('newClass', [this]);
+
         // add listeners
-        ot.forEach(Class.eventListeners, function addListeners(listeners) {
+        ot.forEach(ClassDefiner.eventListeners, function addListeners(listeners) {
             if (ot.isArray(listeners)) {
                 ot.forEach(listeners, addListeners, this);
             } else {
@@ -74,7 +85,6 @@ function ClassDefinerFactory(definerName, parent) {
 
         this.emit('beforeDefined', [this]);
 
-        this.components = [];
         currentlyBuilding.unshift(this);
         definitionFn.call(this.classConstructor);
         currentlyBuilding.shift();
