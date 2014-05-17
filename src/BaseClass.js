@@ -38,6 +38,7 @@ function ClassDefinerFactory(definerName, parent) {
         Class.eventListeners = [parent.eventListeners];
         Class.prototype = ot.boundInherit(parent.prototype);
     }
+    Class.queuedDecorators = [];
 
     Class.prototype.constructor = Class;
 
