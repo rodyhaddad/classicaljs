@@ -1,4 +1,3 @@
-// TODO test globalize (need a way to clean up)
 describe('addClassDecorator', function () {
 
     it('should call the decorate method when the Decorator is invoked', function () {
@@ -59,8 +58,7 @@ describe('addClassDecorator', function () {
         expect(info.decorate).toHaveBeenCalledWith(aClass.$class, 1, true);
     });
 
-    xdescribe('globalize', function () {
-
+    describe('globalize: false', function () {
         it('should not globalize the Decorator by default', function () {
             var info = {decorate: ot.noop};
             spyOn(info, 'decorate');
@@ -76,25 +74,104 @@ describe('addClassDecorator', function () {
             expect(info.decorate.calls.count()).toBe(1);
         });
 
+        it('should apply the Decorator to the Class being currently built', function () {
+            var info = {decorate: jasmine.createSpy('decorate')};
+            BaseClass.addClassDecorator('decorator', info);
+
+            var aClass, aClass2;
+            var aClass = BaseClass('name1', function () {
+                +decorator();
+                aClass2 = BaseClass('name2', function () {
+                    +decorator();
+                });
+            });
+
+            expect(info.decorate.calls.argsFor(0)).toEqual([aClass.$class]);
+            expect(info.decorate.calls.argsFor(1)).toEqual([aClass2.$class]);
+        });
+
+    });
+
+    describe('globalize: true', function () {
         it('should globalize the Decorator if asked to', function () {
             var info = {decorate: ot.noop, globalize: true};
             spyOn(info, 'decorate');
             BaseClass.addClassDecorator('decorator', info);
 
             expect(typeof decorator).toBe('function');
-            +decorator();
             BaseClass('name1', function () {
                 expect(typeof decorator).toBe('function');
-
-                +decorator();
-                BaseClass('name2', function () {
-                    expect(typeof decorator).toBe('function');
-                });
             });
             expect(typeof decorator).toBe('function');
 
-            expect(info.decorate.calls.count()).toBe(2);
         });
+
+        it('should apply the Decorator to the next Class', function () {
+            var info = {decorate: jasmine.createSpy('decorate'), globalize: true};
+            BaseClass.addClassDecorator('decorator', info);
+
+            var aClass, aClass2;
+            +decorator();
+            aClass = BaseClass('name1', function () {
+                +decorator();
+                aClass2 = BaseClass('name2', ot.noop);
+            });
+
+            expect(info.decorate.calls.argsFor(0)).toEqual([aClass.$class]);
+            expect(info.decorate.calls.argsFor(1)).toEqual([aClass2.$class]);
+        });
+
+        it('should only apply the Decorator to its ClassDefiner branch', function () {
+            var infoParent = {decorate: jasmine.createSpy('parentDec'), globalize: true},
+                infoChild = {decorate: jasmine.createSpy('childDec'), globalize: true},
+                childClass = BaseClass.child('child'),
+                diffBranchClass = BaseClass.child('diffBranchClass'),
+                aClass;
+
+            BaseClass.addClassDecorator('parentDec', infoParent);
+            childClass.addClassDecorator('childDec', infoChild);
+
+            // on same branch
+            +parentDec();
+            +childDec();
+            aClass = childClass('name', ot.noop);
+
+            expect(infoParent.decorate).toHaveBeenCalledWith(aClass.$class);
+            expect(infoChild.decorate).toHaveBeenCalledWith(aClass.$class);
+
+            infoParent.decorate.calls.reset();
+            infoChild.decorate.calls.reset();
+
+            // on parent's branch
+            +parentDec();
+            +childDec();
+            aClass = BaseClass('name', ot.noop);
+
+            expect(infoParent.decorate).toHaveBeenCalledWith(aClass.$class);
+            expect(infoChild.decorate).not.toHaveBeenCalled();
+
+            aClass = childClass('name', ot.noop);
+
+            expect(infoChild.decorate).toHaveBeenCalledWith(aClass.$class);
+
+            infoParent.decorate.calls.reset();
+            infoChild.decorate.calls.reset();
+
+            // on different branch
+            +parentDec();
+            +childDec();
+            aClass = diffBranchClass('name', ot.noop);
+
+            expect(infoParent.decorate).toHaveBeenCalledWith(aClass.$class);
+            expect(infoChild.decorate).not.toHaveBeenCalled();
+
+            aClass = childClass('name', ot.noop);
+
+            expect(infoChild.decorate).toHaveBeenCalledWith(aClass.$class);
+
+
+        });
+
     });
 
     describe('on', function () {

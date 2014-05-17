@@ -12,8 +12,14 @@ function createBaseClass() {
     Class.eventListeners.push({
         beforeDefined: function ($class) {
             var queuedDecorators = $class.$classDefiner.queuedDecorators;
-            ot.forEach(queuedDecorators, function (decorator) {
-                decorator($class);
+            ot.forEach(queuedDecorators, function runDecorator(decorator) {
+                if (ot.isArray(decorator)) {
+                    ot.forEach(decorator, runDecorator);
+                    decorator.length = 0;
+                } else {
+                    decorator($class);
+                }
+
             });
             queuedDecorators.length = 0;
         }
@@ -48,6 +54,7 @@ function ClassDefinerFactory(definerName, parent) {
     if (!parent) {
         ClassDefiner.fnToExport = {};
         ClassDefiner.eventListeners = [];
+        ClassDefiner.queuedDecorators = [];
         ClassDefiner.prototype = ot.inherit(EventEmitter.prototype, {
             addComponent: function (component) {
                 this.components.push(component);
@@ -60,10 +67,10 @@ function ClassDefinerFactory(definerName, parent) {
     } else {
         ClassDefiner.fnToExport = ot.boundInherit(parent.fnToExport);
         ClassDefiner.eventListeners = [parent.eventListeners];
+        ClassDefiner.queuedDecorators = [parent.queuedDecorators];
         ClassDefiner.prototype = ot.boundInherit(parent.prototype);
     }
 
-    ClassDefiner.queuedDecorators = [];
     ClassDefiner.events = new EventEmitter();
 
     ClassDefiner.prototype.constructor = ClassDefiner;

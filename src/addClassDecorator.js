@@ -8,7 +8,7 @@ function addClassDecorator(name, info) {
                 callDecorator.call($class, args);
             });
         });
-        $classDefiner.on('destroy', function () {
+        $classDefiner.events.on('destroy', function () {
             ot.navigate(ot.globalObj, name, function (value, key, i, road) {
                 if (i === road.length - 1) {
                     delete this[key];

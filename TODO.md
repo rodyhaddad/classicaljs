@@ -2,5 +2,4 @@
 * Write tests for BaseClass
 * Write tests for exportValues
 * Create addClassAnnotation
-* Finish addClassDecorator tests (globalize, need a way to clean it up)
 * Switch all the `spyOn*` to `jasmine.createSpy`
