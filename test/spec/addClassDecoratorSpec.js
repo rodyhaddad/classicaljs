@@ -1,8 +1,7 @@
 describe('addClassDecorator', function () {
 
     it('should call the decorate method when the Decorator is invoked', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addClassDecorator('decorator', info);
 
         BaseClass('name', function () {
@@ -12,8 +11,7 @@ describe('addClassDecorator', function () {
     });
 
     it('should call the decorate method with the correct parameters', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addClassDecorator('decorator', info);
 
         var aClass = BaseClass('name', function () {
@@ -24,8 +22,7 @@ describe('addClassDecorator', function () {
     });
 
     it('should allow nested Decorators', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
 
         BaseClass.addClassDecorator('decorator', info);
         BaseClass.addClassDecorator('decorator.A', info);
@@ -46,8 +43,7 @@ describe('addClassDecorator', function () {
     });
 
     it('should temporarily add the Decorator to the resulting class', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addClassDecorator('decorator', info);
 
         var aClass = BaseClass('name', function () {
@@ -61,8 +57,7 @@ describe('addClassDecorator', function () {
 
     describe('globalize: false', function () {
         it('should not globalize the Decorator by default', function () {
-            var info = {decorate: ot.noop};
-            spyOn(info, 'decorate');
+            var info = {decorate: jasmine.createSpy('decorate')};
             BaseClass.addClassDecorator('decorator', info);
 
             expect(typeof decorator).toBe('undefined');
@@ -95,8 +90,7 @@ describe('addClassDecorator', function () {
 
     describe('globalize: true', function () {
         it('should globalize the Decorator if asked to', function () {
-            var info = {decorate: ot.noop, globalize: true};
-            spyOn(info, 'decorate');
+            var info = {decorate: jasmine.createSpy('decorate'), globalize: true};
             BaseClass.addClassDecorator('decorator', info);
 
             expect(typeof decorator).toBe('function');
@@ -178,11 +172,9 @@ describe('addClassDecorator', function () {
     describe('on', function () {
         it('should register the listeners to the events only once', function () {
             var info = {decorate: ot.noop, on: {
-                event1: ot.noop,
-                event2: ot.noop
+                event1: jasmine.createSpy('event1'),
+                event2: jasmine.createSpy('event2')
             }};
-            spyOn(info.on, 'event1');
-            spyOn(info.on, 'event2');
 
             BaseClass.addClassDecorator('decorator', info);
 

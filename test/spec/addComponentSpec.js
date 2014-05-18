@@ -1,7 +1,6 @@
 describe('addComponent', function () {
     it('should call the createComponent method when the Component is invoked', function () {
-        var info = {createComponent: ot.noop};
-        spyOn(info, 'createComponent');
+        var info = {createComponent: jasmine.createSpy('createComponent')};
         BaseClass.addComponent('Component', info);
 
         BaseClass('name', function () {
@@ -11,8 +10,7 @@ describe('addComponent', function () {
     });
 
     it('should call the createComponent method with the correct parameters', function () {
-        var info = {createComponent: ot.noop};
-        spyOn(info, 'createComponent');
+        var info = {createComponent: jasmine.createSpy('createComponent')};
         BaseClass.addComponent('Component', info);
 
         var aClass = BaseClass('name', function () {
@@ -23,8 +21,7 @@ describe('addComponent', function () {
     });
 
     it('should allow nested Components', function () {
-        var info = {createComponent: ot.noop};
-        spyOn(info, 'createComponent');
+        var info = {createComponent: jasmine.createSpy('createComponent')};
 
         BaseClass.addComponent('Component', info);
         BaseClass.addComponent('Component.A', info);
@@ -56,8 +53,7 @@ describe('addComponent', function () {
     });
 
     it('should temporarily add the Component to the resulting class', function () {
-        var info = {createComponent: ot.noop};
-        spyOn(info, 'createComponent');
+        var info = {createComponent: jasmine.createSpy('createComponent')};
         BaseClass.addComponent('Component', info);
 
         var aClass = BaseClass('name', function () {
@@ -72,11 +68,9 @@ describe('addComponent', function () {
     describe('on', function () {
         it('should register the listeners to the events only once', function () {
             var info = {createComponent: ot.noop, on: {
-                event1: ot.noop,
-                event2: ot.noop
+                event1: jasmine.createSpy('event1'),
+                event2: jasmine.createSpy('event2')
             }};
-            spyOn(info.on, 'event1');
-            spyOn(info.on, 'event2');
 
             BaseClass.addComponent('Component', info);
 

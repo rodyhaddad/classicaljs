@@ -15,8 +15,7 @@ describe('addDecorator', function () {
     });
 
     it('should call the decorate method when the Decorator is invoked', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addDecorator('decorator', info);
 
         BaseClass('name', function () {
@@ -27,8 +26,7 @@ describe('addDecorator', function () {
     });
 
     it('should call the decorate method with the correct parameters', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addDecorator('decorator', info);
 
         var aClass = BaseClass('name', function () {
@@ -40,8 +38,7 @@ describe('addDecorator', function () {
     });
 
     it('should allow nested Decorators', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
 
         BaseClass.addDecorator('decorator', info);
         BaseClass.addDecorator('decorator.A', info);
@@ -75,8 +72,7 @@ describe('addDecorator', function () {
     });
 
     it('should temporarily add the Decorator to the resulting class', function () {
-        var info = {decorate: ot.noop};
-        spyOn(info, 'decorate');
+        var info = {decorate: jasmine.createSpy('decorate')};
         BaseClass.addDecorator('decorator', info);
 
         var aClass = BaseClass('name', function () {
@@ -91,8 +87,7 @@ describe('addDecorator', function () {
 
     describe('after', function () {
         it('should attach the decorator to the last component if the after is true', function () {
-            var info = {decorate: ot.noop, after: true};
-            spyOn(info, 'decorate');
+            var info = {decorate: jasmine.createSpy('decorate'), after: true};
             BaseClass.addDecorator('decorator', info);
 
             var aClass = BaseClass('name', function () {
@@ -103,10 +98,9 @@ describe('addDecorator', function () {
         });
 
         it('should call the after property if it\'s function, with the correct parameters', function () {
-            var info = {decorate: ot.noop, after: function (lastComponent, $class, afterOrNot) {
+            var info = {decorate: ot.noop, after: jasmine.createSpy('after', function (lastComponent, $class, afterOrNot) {
                 return afterOrNot;
-            }};
-            spyOn(info, 'after').and.callThrough();
+            })};
             BaseClass.addDecorator('decorator', info);
 
             var aClass = BaseClass('name', function () {
@@ -129,11 +123,9 @@ describe('addDecorator', function () {
     describe('on', function () {
         it('should register the listeners to the events only once', function () {
             var info = {decorate: ot.noop, on: {
-                event1: ot.noop,
-                event2: ot.noop
+                event1: jasmine.createSpy('event1'),
+                event2: jasmine.createSpy('event2')
             }};
-            spyOn(info.on, 'event1');
-            spyOn(info.on, 'event2');
 
             BaseClass.addDecorator('decorator', info);
 

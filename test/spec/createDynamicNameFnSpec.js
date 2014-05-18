@@ -29,11 +29,9 @@ describe('createDynamicNameFnSpec', function () {
         it('should accept callbacks for when the function is invoked or instantiated', function () {
             var context = {},
                 callbacks = {
-                    asFunction: ot.noop,
-                    asConstructor: ot.noop
+                    asFunction: jasmine.createSpy('asFunction'),
+                    asConstructor: jasmine.createSpy('asConstructor')
                 };
-            spyOn(callbacks, 'asFunction');
-            spyOn(callbacks, 'asConstructor');
 
             var fn = createDynamicNameFn('namedFn', callbacks);
 
@@ -62,11 +60,9 @@ describe('createDynamicNameFnSpec', function () {
         it('should accept callbacks for when the function is invoked or instantiated', function () {
             var context = {},
                 callbacks = {
-                    asFunction: ot.noop,
-                    asConstructor: ot.noop
+                    asFunction: jasmine.createSpy('asFunction'),
+                    asConstructor: jasmine.createSpy('asConstructor')
                 };
-            spyOn(callbacks, 'asFunction');
-            spyOn(callbacks, 'asConstructor');
 
             var fn = createDynamicNameFn('namedFn', callbacks);
 
@@ -80,5 +76,4 @@ describe('createDynamicNameFnSpec', function () {
             expect(callbacks.asConstructor.calls.count()).toBe(1);
         });
     });
-
 });

@@ -39,20 +39,20 @@ describe('BaseClass', function () {
             });
 
             // Isolated plugin should only be available for child
-            child1('name', define = createFnSpy(function () {
+            child1('name', define = jasmine.createSpy('define', function () {
                 expect(typeof Isolated).toBe('function');
                 expect(typeof Isolated2).toBe('undefined');
             }));
             expect(define).toHaveBeenCalled();
 
-            child2('name', define = createFnSpy(function () {
+            child2('name', define = jasmine.createSpy('define', function () {
                 expect(typeof Isolated).toBe('function');
                 expect(typeof Isolated2).toBe('function');
             }));
             expect(define).toHaveBeenCalled();
 
             // but not for BseClass
-            BaseClass('name', define = createFnSpy(function () {
+            BaseClass('name', define = jasmine.createSpy('define', function () {
                 expect(typeof Isolated).toBe('undefined');
                 expect(typeof Isolated2).toBe('undefined');
             }));
