@@ -4,6 +4,7 @@ var BaseClass = createBaseClass();
 function createBaseClass() {
     var Class = ClassDefinerFactory('BaseClass');
     Class.addClassDecorator = addClassDecorator;
+    Class.addClassAnnotation = addClassAnnotation;
     Class.addComponent = addComponent;
     Class.addDecorator = addDecorator;
     Class.addAnnotation = addAnnotation;
@@ -99,6 +100,7 @@ function ClassDefinerFactory(definerName, parent) {
 
         this.$$usedPlugins = {};
         this.components = [];
+        this.annotations = [];
 
         ClassDefiner.events.emit('newClass', [this]);
 

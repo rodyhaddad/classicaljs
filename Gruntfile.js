@@ -5,10 +5,7 @@ module.exports = function (grunt) {
         "src/EventEmitter.js",
         "src/createDynamicNameFn.js",
         "src/exportValues.js",
-        "src/addClassDecorator.js",
-        "src/addComponent.js",
-        "src/addDecorator.js",
-        "src/addAnnotation.js",
+        "src/add*.js",
         "src/BaseClass.js",
         "src/**.js",
         "src/classicaljs.suffix"
