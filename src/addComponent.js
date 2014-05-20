@@ -8,4 +8,4 @@ function addComponent(name, info) {
             $class.addComponent(info.createComponent.apply(info, ot.toArray(arguments)));
         }
     });
-};
+}

@@ -14,4 +14,4 @@ function addClassAnnotation(name, info) {
             }
         }
     });
-};
+}

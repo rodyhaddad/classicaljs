@@ -76,7 +76,7 @@ describe('addAnnotation', function () {
     });
 
     it('should allow nested Annotations', function () {
-        var info = {annotation: jasmine.createSpy('annotaion')};
+        var info = {annotation: jasmine.createSpy('annotation')};
 
         BaseClass.addAnnotation('annotation', info);
         BaseClass.addAnnotation('annotation.A', info);
@@ -110,7 +110,7 @@ describe('addAnnotation', function () {
     });
 
     it('should temporarily add the Annotation to the resulting class', function () {
-        var info = {annotation: jasmine.createSpy('annotaion')};
+        var info = {annotation: jasmine.createSpy('annotation')};
         BaseClass.addAnnotation('annotation', info);
 
         var aClass = BaseClass('name', function () {

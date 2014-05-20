@@ -13,4 +13,4 @@ function addAnnotation(name, info) {
             }
         }
     });
-};
+}

@@ -30,4 +30,4 @@ function addClassDecorator(name, info) {
         }
         this.$$usedPlugins[name] = true;
     }
-};
+}
