@@ -10,23 +10,144 @@
         <h2>Feel free to open up your console and test Classical.js :)</h2>
         <script type="text/javascript" src="dist/classical.js"></script>
         <script>
-            var A = Class("A", function () {
-                Public(function testInherit() {
+            Class.addComponent('Public', {
+                data: {
+                    Public: function(name, fn) {
+                        this.name = name;
+                        this.fn = fn;
+                    }
+                },
 
+                createComponent: function ($class, name, fn) {
+                    if (Class.ot.isFn(name)) {
+                        fn = name;
+                        name = fn.name;
+                    }
+                    return new this.data.Public(name, fn);
+                },
+                on: {
+                    defined: function ($class) {
+                        var Public = this.data.Public;
+                        Class.ot.forEach($class.components, function (component) {
+                            if (component instanceof Public) {
+                                $class.classConstructor.prototype[component.name] = component.fn;
+                            }
+                        }, this);
+                    }
+                }
+            });
+
+            Class.addComponent('Constructor', {
+                data: {
+                    Constructor: function(fn) {
+                        this.fn = fn;
+                    }
+                },
+
+                createComponent: function ($class, fn) {
+                    return new this.data.Constructor(fn);
+                },
+                on: {
+                    newInstance: function ($class, instance) {
+                        var Constructor = this.data.Constructor;
+                        var args = Class.ot.toArray(arguments).slice(2);
+
+                        Class.ot.forEach($class.components, function (component) {
+                            if (component instanceof Constructor) {
+                                component.fn.apply(instance, args);
+                            }
+                        });
+                    }
+                }
+            });
+
+            Class.addClassAnnotation('Inject', {
+                globalize: true,
+                annotation: function Inject(component, $class) {
+                    this.tokens = Class.ot.toArray(arguments).slice(2);
+                }
+            });
+
+            Class.addAnnotation('AttrExprBinding', {
+                annotation: function AttrExprBInding($class, attrName) {
+                    this.attrName = attrName;
+                }
+            })
+
+            Class.addDecorator('log', {
+                after: true,
+                decorate: function (component, $class, arg0, arg1) {
+                    console.log('component', component);
+                }
+            });
+
+
+            var Gulp = Class.child();
+            Gulp.addDecorator('coffee');
+            Gulp.child('name');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            +Import('...')
+
+            +Inject('Element')
+            var A = Class("A", function (deps) {
+
+                // Can be implicit
+                Constructor(function (el) {
+                    this.el = el;
+                });
+
+                +AttrExprBinding('ngSrc')
+                Public(function srcChange(value) {
+                    this.src = value;
                 });
             });
 
-            var B = Class("B", {aConfig: 'yay'}, function (arg1) {
-                Extends(A);
-                Config({
-                    testBlah: true
-                });
-                Public(function testMethod() {
-                    console.log(this);
-                });
-            });
+            thatClass.annotations = [
+                    new Inject,
+            ]
 
-            console.dir(l = new B('cool'));
+            console.log(new A(document.body));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         </script>
     </body>
 </html>

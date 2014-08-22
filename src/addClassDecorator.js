@@ -18,7 +18,7 @@ function addClassDecorator(name, info) {
         });
     } else {
         var exportFn = exportClassFn(callDecorator);
-        ot.navigate.set($classDefiner.fnToExport, name, exportFn, true);
+        ot.navigate.setOwn($classDefiner.fnToExport, name, exportFn);
     }
 
     function callDecorator (args) {

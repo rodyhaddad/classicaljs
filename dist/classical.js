@@ -1,4 +1,4 @@
-/*! ClassicalJS v0.0.0 21-09-2013 
+/*! ClassicalJS v0.1.0 20-05-2014 
 Copyright (c) 2013 rodyhaddad
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,502 +22,529 @@ THE SOFTWARE.
 
 var Class = (function () {
 
-/*! objectTools.js v0.7.0 19-07-2013 
-The MIT License (MIT)
+/*! objectTools.js v0.9.0 17-04-2014
+ The MIT License (MIT)
 
-Copyright (c) 2013 rodyhaddad
+ Copyright (c) 2013 rodyhaddad
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished
-to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is furnished
+ to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ */
 
 var ot = (function () {
 
-/**
- * The global object. `window` in the browser, `global` in node.js or `this` otherwise
- *
- * @type {window|global|*}
- */
-var globalObj = typeof window !== "undefined" ? window :
-    (typeof global !== "undefined" ? global :
-        this);
+    /**
+     * The global object. `window` in the browser, `global` in node.js or `this` otherwise
+     *
+     * @type {window|global|*}
+     */
+    var globalObj = typeof window !== "undefined" ? window :
+        (typeof global !== "undefined" ? global :
+            this);
 
-/**
- * Determine whether the argument is an array or not
- *
- * @param arr Variable to test on
- * @returns {boolean} Whether the argument is an array or not
- */
-function isArray(arr) {
-    return Object.prototype.toString.call(arr) === "[object Array]";
-}
-
-/**
- * Determine whether the argument is an object or not (excludes null)
- *
- * @param obj Variable to test on
- * @returns {boolean} Whether the argument is an object or not (excludes null)
- */
-function isObject(obj) {
-    return typeof obj === "object" && obj !== null;
-}
-
-/**
- * Determine whether the argument is a function or not
- *
- * @param fn Variable to test on
- * @returns {boolean} Whether the argument is a function or not
- */
-function isFn(fn) {
-    return typeof fn === "function";
-}
-
-/**
- * Determine whether the argument is undefined or not
- *
- * @param val Variable to test on
- * @returns {boolean} Whether the argument is undefined or not
- */
-function isUndefined(val) {
-    return typeof val === "undefined";
-}
-
-/**
- * Determine whether the argument is empty or not
- *
- * @param {Object} obj Object to test on
- * @returns {boolean} Whether the object is empty
- */
-function isEmptyObject(obj) {
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            return false;
-        }
+    /**
+     * Determine whether the argument is an array or not
+     *
+     * @param arr Variable to test on
+     * @returns {boolean} Whether the argument is an array or not
+     */
+    function isArray(arr) {
+        return Object.prototype.toString.call(arr) === "[object Array]";
     }
-    return true;
-}
 
-/**
- * Transforms the argument into an array. Useful for transmuting the arguments object
- *
- * @param obj the argument to transform into an array
- * @returns {Array} An array originating from the argument
- */
-function toArray(obj) {
-    return Array.prototype.slice.call(obj, 0);
-}
-
-/**
- * Cleans an array from a specific element
- *
- * @param array An array to clean
- * @param from What should be removed from the array
- * @returns {Array} The cleaned array
- */
-function cleanArray(array, from) {
-    for (var i = array.length - 1; i >= 0; i--) {
-        if (array[i] === from) {
-            array.splice(i, 1);
-        }
+    /**
+     * Determine whether the argument is an object or not (excludes null)
+     *
+     * @param obj Variable to test on
+     * @returns {boolean} Whether the argument is an object or not (excludes null)
+     */
+    function isObject(obj) {
+        return typeof obj === "object" && obj !== null;
     }
-    return array;
-}
 
-/**
- * A function that performs no operations
- */
-function noop() {
-
-}
-
-/**
- * If the value of the named property is a function then invoke it with the object as context.
- * Otherwise, return it.
- *
- * @param {Object} object The object to act on
- * @param {String} property The property to return
- * @param {Array} args The arguments passed to the value if it's a function
- * @returns {*} the result
- */
-function result(object, property, args) {
-    if (object) {
-        var value = object[property];
-        return isFn(value) ? value.apply(object, args) : value;
+    /**
+     * Determine whether the argument is a function or not
+     *
+     * @param fn Variable to test on
+     * @returns {boolean} Whether the argument is a function or not
+     */
+    function isFn(fn) {
+        return typeof fn === "function";
     }
-}
 
-/**
- * Invokes the `iterator` function once for each item in `obj` collection, which can be either an object or an array.
- * the `iterator` function is invoked with iterator(value, key|index), with it's `this` being the `context`
- *
- * @param {Object|Array} obj Object to iterate over
- * @param {Function} iterator Iterator function
- * @param {*} [context] The context (`this`) for the iterator function
- * @returns {*} The obj passed in
- */
-function forEach(obj, iterator, context) {
-    var key, len;
-    if (obj) {
-        if (isFn(obj)) {
-            for (key in obj) {
-                if (obj.hasOwnProperty(key) && key != "prototype" && key != "length" && key != "name") {
-                    iterator.call(context, obj[key], key);
-                }
+    /**
+     * Determine whether the argument is undefined or not
+     *
+     * @param val Variable to test on
+     * @returns {boolean} Whether the argument is undefined or not
+     */
+    function isUndefined(val) {
+        return typeof val === "undefined";
+    }
+
+    /**
+     * Determine whether the argument is empty or not
+     *
+     * @param {Object} obj Object to test on
+     * @returns {boolean} Whether the object is empty
+     */
+    function isEmptyObject(obj) {
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                return false;
             }
-        } else if (isArray(obj) || obj.hasOwnProperty("length")) {
-            for (key = 0, len = obj.length; key < len; key++) {
-                iterator.call(context, obj[key], key);
-            }
-        } else if (obj.forEach && obj.forEach !== forEach) {
-            obj.forEach(iterator, context);
-        } else {
-            for (key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    iterator.call(context, obj[key], key);
+        }
+        return true;
+    }
+
+    /**
+     * Transforms the argument into an array. Useful for transmuting the arguments object
+     *
+     * @param obj the argument to transform into an array
+     * @returns {Array} An array originating from the argument
+     */
+    function toArray(obj) {
+        return Array.prototype.slice.call(obj, 0);
+    }
+
+    /**
+     * Cleans an array from a specific element
+     *
+     * @param array An array to clean
+     * @param from What should be removed from the array
+     * @param once If true, will stop at the first occurrence of `from`
+     * @returns {Array} The cleaned array
+     */
+    function cleanArray(array, from, once) {
+        for (var i = array.length - 1; i >= 0; i--) {
+            if (array[i] === from) {
+                array.splice(i, 1);
+                if (once) {
+                    break;
                 }
             }
         }
-    }
-    return obj;
-}
-
-var _inherit = Object.create || (function () {
-    function F() {
+        return array;
     }
 
-    return function (o) {
-        F.prototype = o;
-        return new F();
-    };
-})();
+    /**
+     * A function that performs no operations
+     */
+    function noop() {
 
-/**
- * Makes an object that inherits `obj`. Similar to Object.create
- *
- * @param obj {Object} The object to inherit
- * @param [mergeObj] {Object} An object that will be merged with the resulting child object
- * @returns {Object} The resulting object
- */
-function inherit(obj, mergeObj) {
-    var inheritObj = _inherit(obj);
+    }
 
-    return mergeObj ? merge(inheritObj, mergeObj) : inheritObj;
-}
+    /**
+     * If the value of the named property is a function then invoke it with the object as context.
+     * Otherwise, return it.
+     *
+     * @param {Object} object The object to act on
+     * @param {String} property The property to return
+     * @param {Array} args The arguments passed to the value if it's a function
+     * @returns {*} the result
+     */
+    function result(object, property, args) {
+        if (object) {
+            var value = object[property];
+            return isFn(value) ? value.apply(object, args) : value;
+        }
+    }
 
-/**
- * Makes an object that recursively inherits `obj`.
- *
- * @param obj {Object} The object to recursively inherit
- * @param [mergeObj] {Object} An object that will be recursively merged with the resulting child object
- * @param {Function} fnEachLevel A function that gets called on each level of inherited object
- * @returns {Object} The resulting object
- */
-function deepInherit(obj, mergeObj, fnEachLevel, _level) {
-    var inheritObj;
-    if (isFn(obj)) {
-        inheritObj = function () {
-            return obj.apply(this, toArray(arguments));
+    /**
+     * Invokes the `iterator` function once for each item in `obj` collection, which can be either an object or an array.
+     * the `iterator` function is invoked with iterator(value, key|index), with it's `this` being the `context`
+     *
+     * @param {Object|Array} obj Object to iterate over
+     * @param {Function} iterator Iterator function
+     * @param {*} [context] The context (`this`) for the iterator function
+     * @param {Boolean} [includeProto] If true, properties in the prototype will be iterated over
+     * @returns {*} The obj passed in
+     */
+    function forEach(obj, iterator, context, includeProto) {
+        var key, len;
+        if (obj) {
+            if (isArray(obj)) {
+                for (key = 0, len = obj.length; key < len; key++) {
+                    iterator.call(context, obj[key], key);
+                }
+            } else if (obj.forEach && obj.forEach !== forEach) {
+                obj.forEach(iterator, context);
+            } else {
+                for (key in obj) {
+                    if ((includeProto || obj.hasOwnProperty(key)) && key.substring(0, 2) != "$$") {
+                        iterator.call(context, obj[key], key);
+                    }
+                }
+            }
+        }
+        return obj;
+    }
+
+    var _inherit = Object.create || (function () {
+        function F() {
+        }
+
+        return function (o) {
+            F.prototype = o;
+            return new F();
         };
-    } else {
-        inheritObj = inherit(obj);
+    })();
+
+    /**
+     * Makes an object that inherits `obj`. Similar to Object.create
+     *
+     * @param obj {Object} The object to inherit
+     * @param [mergeObj] {Object} An object that will be merged with the resulting child object
+     * @returns {Object} The resulting object
+     */
+    function inherit(obj, mergeObj) {
+        var inheritObj = _inherit(obj);
+
+        return mergeObj ? merge(inheritObj, mergeObj) : inheritObj;
     }
 
-    if (fnEachLevel) {
-        _level = _level || 0;
-        fnEachLevel(inheritObj, obj, _level);
-    }
-
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            if (( isFn(obj[key]) || isObject(obj[key]) ) && globalObj !== obj[key] && !isArray(obj[key])) {
-                inheritObj[key] = deepInherit(obj[key], null, fnEachLevel, _level + 1);
-            }
+    /**
+     * Makes an object that recursively inherits `obj`.
+     *
+     * @param obj {Object} The object to recursively inherit
+     * @param [mergeObj] {Object} An object that will be recursively merged with the resulting child object
+     * @param {Function} fnEachLevel A function that gets called on each level of inherited object
+     * @returns {Object} The resulting object
+     */
+    function deepInherit(obj, mergeObj, fnEachLevel, _level) {
+        var inheritObj;
+        if (isFn(obj)) {
+            inheritObj = function () {
+                return obj.apply(this, toArray(arguments));
+            };
+        } else {
+            inheritObj = inherit(obj);
         }
-    }
-    return mergeObj ? deepMerge(inheritObj, mergeObj) : inheritObj;
-}
-
-/**
- * Makes an object that recursively inherits `obj`.
- *
- * @param obj {Object} The object to bound inherit
- * @param [mergeObj] {Object} An object that will be recursively merged with the resulting child object
- * @param {Function} fnEachLevel A function that gets called on each level of inherited object
- * @returns {Object} The resulting object
- */
-function boundInherit(obj, mergeObj, fnEachLevel) {
-    return deepInherit(obj, mergeObj, function (obj, superObj, level) {
-        if (!isArray(superObj.$$boundChildren)) {
-            superObj.$$boundChildren = [];
-        }
-        superObj.$$boundChildren.push(obj);
 
         if (fnEachLevel) {
-            fnEachLevel(obj, superObj, level);
+            _level = _level || 0;
+            fnEachLevel(inheritObj, obj, _level);
         }
 
-    });
-}
-
-/**
- * Merges the `destination` and the `source` objects
- * by copying all of the properties from the source object to the destination object.
- *
- * @param {Object} destination Destination Object
- * @param {Object} source Source Object
- * @returns {Object} The mutated `destination` Object
- */
-function merge(destination, source) {
-    if(destination && source) {
-        for(var key in source) {
-            if(source.hasOwnProperty(key)) {
-                destination[key] = source[key];
-            }
-        }
-    }
-    return destination;
-}
-
-/**
- * Recursively/Deeply merges the `destination` and the `source` objects
- * by copying all of the properties from the source object to the destination object.
- *
- * @param {Object} destination Destination Object
- * @param {Object} source Source Object
- * @returns {Object} The mutated `destination` Object
- */
-function deepMerge(destination, source) {
-    if(destination && source) {
-        for(var key in source) {
-            if(source.hasOwnProperty(key)) {
-                if(isObject(source[key]) && isObject(destination[key])) {
-                    deepMerge(destination[key], source[key]);
-                } else {
-                    destination[key] = source[key];
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                if (( isObject(obj[key]) || (isFn(obj[key]) && !isEmptyObject(obj[key])) ) && globalObj !== obj[key] && !isArray(obj[key])) {
+                    inheritObj[key] = deepInherit(obj[key], null, fnEachLevel, _level + 1);
                 }
             }
         }
-    }
-    return destination;
-}
-
-/**
- * Softly deeply merges the `destination` and the `source` objects
- * by copying all of the properties from the source object that do not exist on the destination object.
- *
- * @param {Object} destination Destination Object
- * @param {Object} source Source Object
- * @returns {Object} The mutated `destination` Object
- */
-function softMerge(destination, source) {
-    if(destination && source) {
-        for(var key in source) {
-            if(source.hasOwnProperty(key)) {
-                if(isObject(source[key]) && isObject(destination[key])) {
-                    softMerge(destination[key], source[key]);
-                } else if(isUndefined(destination[key])) {
-                    destination[key] = source[key];
-                }
-            }
-        }
-    }
-    return destination;
-}
-
-/**
- * Allows you to navigate an object with a given `road`.
- * The given `fn` is invoked with fn(value, key, roadIndex, road) with the context (`this`) being the step in the road
- * you're in.
- * If `fn` returns false, the navigation stops
- *
- * @param {Object} obj The object to navigate
- * @param {Array|String} road Either an array of property names or a String of dot separated property names
- * @param {Function} fn A function that will be called for every property name with the args (value, key, index, roadArray) and its this scope being the current step in the road
- * @returns {*} `null` if navigation was interrupted, or the last step in the road
- */
-function navigate(obj, road, fn) {
-    if (typeof road === "string") {
-        road = cleanArray(road.split("."));
-    }
-    for (var i = 0; i < road.length; i++) {
-        if (isUndefined(obj) || fn.call(obj, obj[road[i]], road[i], i, road) === false) {
-            return null;
-        }
-        obj = obj[road[i]];
+        return mergeObj ? deepMerge(inheritObj, mergeObj) : inheritObj;
     }
 
-    return obj;
-}
-
-/**
- * Allows you to check if all properties on a road are owned by a specific Object
- *
- * @param {Object} obj The object to navigate
- * @param {Array|String} road Either an array of property names or a String of dot separated property names
- * @returns {boolean} Whether all properties in the road are owned by `obj`
- */
-navigate.hasOwn = function (obj, road) {
-    var hasOwn = true;
-    navigate(obj, road, function (value, key) {
-        hasOwn = this.hasOwnProperty(key);
-        return hasOwn;
-    });
-    return hasOwn;
-};
-
-// handle the completion of the road for navigate.set
-var completeRoad = {
-    'undefined': function (value, key) {
-        this[key] = {};
-    },
-    'object': function (value, key, setOwn) {
-        if (setOwn && !this.hasOwnProperty(key)) {
-            this[key] = inherit(this[key]);
-        }
-    },
-    'function': noop,
-    'null': function (value, key) {
-        this[key] = {
-            valueOf: function () {
-                return value;
-            }
-        };
-    }
-    //string, boolean, number = null
-};
-completeRoad.string = completeRoad.boolean = completeRoad.number = completeRoad['null'];
-navigate._completeRoad = completeRoad;
-
-/**
- * Navigate `obj` on the `road` and sets `endValue` on the end of the `road`
- *
- * @param {Object} obj The object to navigate
- * @param {Array|String} road Either an array of property names or a String of dot separated property names
- * @param {*} endValue The value to set on the end of the road
- * @param {boolean} setOwn If true, it makes sure that the navigation never travels in an inherited Object
- * @returns {*} The `endValue`
- */
-navigate.set = function (obj, road, endValue, setOwn) {
-    navigate(obj, road, function (value, key, i, road) {
-        if (i === road.length - 1) {
-            if (isObject(value)) {
-                if (isObject(endValue) || isFn(endValue)) {
-                    this[key] = endValue;
-                    merge(this[key], value);
+    /**
+     * Makes an object that recursively inherits `obj`.
+     *
+     * @param obj {Object} The object to bound inherit
+     * @param [mergeObj] {Object} An object that will be recursively merged with the resulting child object
+     * @param {Function} fnEachLevel A function that gets called on each level of inherited object
+     * @returns {Object} The resulting object
+     */
+    function boundInherit(obj, mergeObj, fnEachLevel) {
+        return deepInherit(obj, mergeObj, function (obj, superObj, level) {
+            if (!superObj.hasOwnProperty('$$boundChildren')) {
+                if (isArray(superObj.$$boundChildren)) {
+                    var parentChildren = superObj.$$boundChildren;
+                    superObj.$$boundChildren = [obj];
+                    superObj.$$boundChildren.$$parentChildren = parentChildren;
                 } else {
-                    this[key].valueOf = function () {
-                        return endValue;
-                    };
+                    superObj.$$boundChildren = [obj];
                 }
             } else {
-                this[key] = endValue;
+                superObj.$$boundChildren.push(obj);
             }
-        } else {
-            var typeofValue = (value !== null ? typeof value : "null");
-            completeRoad[typeofValue].call(this, value, key, setOwn, value, i, road);
-        }
 
-        if (this.$$boundChildren && isObject(this[key])) {
-            forEach(this.$$boundChildren, function (child) {
-                if (!child.hasOwnProperty(key)){
-                    child[key] = boundInherit(this[key]);
-                }
-            }, this);
-        }
-    });
-    return endValue;
-};
+            if (fnEachLevel) {
+                fnEachLevel(obj, superObj, level);
+            }
 
-/**
- * Navigate `obj` on the `road` and sets `endValue` on the end of the `road`,
- * making sure it never travels in an inherited Object
- *
- * @param {Object} obj The object to navigate
- * @param {Array|String} road Either an array of property names or a String of dot separated property names
- * @param {*} endValue The value to set on the end of the road
- * @returns {*} The `endValue`
- */
-navigate.setOwn = function (obj, road, endValue) {
-    return navigate.set(obj, road, endValue, true);
-};
-
-/**
- * Navigate `obj` on the `road` and returns the value at the end of the `road`
- *
- * @param {Object} obj The object to navigate
- * @param {Array|String} road Either an array of property names or a String of dot separated property names
- * @returns {*} The value at the end of the road
- */
-navigate.get = function (obj, road) {
-    var endValue = null;
-
-    navigate(obj, road, function (value, key, i, road) {
-        if (i === road.length - 1) {
-            endValue = value;
-        }
-    });
-
-    return endValue && endValue.valueOf();
-};
-
-var ot = {
-    globalObj: globalObj,
-    isArray: isArray,
-    isObject: isObject,
-    isFn: isFn,
-    isUndefined: isUndefined,
-    isEmptyObject: isEmptyObject,
-    toArray: toArray,
-    cleanArray: cleanArray,
-    noop: noop,
-    result: result,
-
-    forEach: forEach,
-
-    merge: merge,
-    deepMerge: deepMerge, mergeRecursively: deepMerge, recursiveMerge: deepMerge,
-    softMerge: softMerge, mergeSoftly: softMerge,
-
-    inherit: inherit,
-    deepInherit: deepInherit, recursiveInherit: deepInherit, inheritRecursively: deepInherit,
-    boundInherit: boundInherit,
-
-    navigate: navigate
-};
-
-if (typeof module === "object" && module && isObject(module.exports)) {
-    module.exports = ot;
-} else {
-    if (typeof define === "function" && define.amd) {
-        define("ot", [], function(){
-            return ot;
         });
     }
-}
+
+    /**
+     * Unbind an object from it's bound-inherited parent
+     *
+     * @param obj {Object} The object to unbind from its parent
+     * @returns {Object} The resulting object
+     */
+    function unbindInherit(obj) {
+        var boundChildren = obj.$$boundChildren;
+        if (obj.hasOwnProperty('$$boundChildren')) {
+            boundChildren = boundChildren.$$parentChildren;
+        }
+        cleanArray(boundChildren, obj, true);
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key) && obj[key] && obj[key].$$boundChildren) {
+                unbindInherit(obj[key]);
+            }
+        }
+        return obj;
+    }
+
+    /**
+     * Merges the `destination` and the `source` objects
+     * by copying all of the properties from the source object to the destination object.
+     *
+     * @param {Object} destination Destination Object
+     * @param {Object} source Source Object
+     * @returns {Object} The mutated `destination` Object
+     */
+    function merge(destination, source) {
+        if(destination && source) {
+            for(var key in source) {
+                if(source.hasOwnProperty(key)) {
+                    destination[key] = source[key];
+                }
+            }
+        }
+        return destination;
+    }
+
+    /**
+     * Recursively/Deeply merges the `destination` and the `source` objects
+     * by copying all of the properties from the source object to the destination object.
+     *
+     * @param {Object} destination Destination Object
+     * @param {Object} source Source Object
+     * @returns {Object} The mutated `destination` Object
+     */
+    function deepMerge(destination, source) {
+        if(destination && source) {
+            for(var key in source) {
+                if(source.hasOwnProperty(key)) {
+                    if(isObject(source[key]) && isObject(destination[key])) {
+                        deepMerge(destination[key], source[key]);
+                    } else {
+                        destination[key] = source[key];
+                    }
+                }
+            }
+        }
+        return destination;
+    }
+
+    /**
+     * Softly deeply merges the `destination` and the `source` objects
+     * by copying all of the properties from the source object that do not exist on the destination object.
+     *
+     * @param {Object} destination Destination Object
+     * @param {Object} source Source Object
+     * @returns {Object} The mutated `destination` Object
+     */
+    function softMerge(destination, source) {
+        if(destination && source) {
+            for(var key in source) {
+                if(source.hasOwnProperty(key)) {
+                    if(isObject(source[key]) && isObject(destination[key])) {
+                        softMerge(destination[key], source[key]);
+                    } else if(isUndefined(destination[key])) {
+                        destination[key] = source[key];
+                    }
+                }
+            }
+        }
+        return destination;
+    }
+
+    /**
+     * Allows you to navigate an object with a given `road`.
+     * The given `fn` is invoked with fn(value, key, roadIndex, road) with the context (`this`) being the step in the road
+     * you're in.
+     * If `fn` returns false, the navigation stops
+     *
+     * @param {Object} obj The object to navigate
+     * @param {Array|String} road Either an array of property names or a String of dot separated property names
+     * @param {Function} fn A function that will be called for every property name with the args (value, key, index, roadArray) and its this scope being the current step in the road
+     * @returns {*} `null` if navigation was interrupted, or the last step in the road
+     */
+    function navigate(obj, road, fn) {
+        if (typeof road === "string") {
+            road = cleanArray(road.split("."));
+        }
+        for (var i = 0; i < road.length; i++) {
+            if (isUndefined(obj) || fn.call(obj, obj[road[i]], road[i], i, road) === false) {
+                return null;
+            }
+            obj = obj[road[i]];
+        }
+
+        return obj;
+    }
+
+    /**
+     * Allows you to check if all properties on a road are owned by a specific Object
+     *
+     * @param {Object} obj The object to navigate
+     * @param {Array|String} road Either an array of property names or a String of dot separated property names
+     * @returns {boolean} Whether all properties in the road are owned by `obj`
+     */
+    navigate.hasOwn = function (obj, road) {
+        var hasOwn = true;
+        navigate(obj, road, function (value, key) {
+            hasOwn = this.hasOwnProperty(key);
+            return hasOwn;
+        });
+        return hasOwn;
+    };
+
+// handle the completion of the road for navigate.set
+    var completeRoad = {
+        'undefined': function (value, key) {
+            this[key] = {};
+        },
+        'object': function (value, key, setOwn) {
+            if (setOwn && !this.hasOwnProperty(key)) {
+                this[key] = inherit(this[key]);
+            }
+        },
+        'function': function (value, key, setOwn) {
+            if (setOwn && !this.hasOwnProperty(key)) {
+                // it's a boundInherit because we're returning a function
+                // and its __proto__ can't be the other function
+                this[key] = boundInherit(this[key]);
+            }
+        },
+        'null': function (value, key) {
+            this[key] = {
+                valueOf: function () {
+                    return value;
+                }
+            };
+        }
+        //string, boolean, number = null
+    };
+    completeRoad.string = completeRoad.boolean = completeRoad.number = completeRoad['null'];
+    navigate._completeRoad = completeRoad;
+
+    /**
+     * Navigate `obj` on the `road` and sets `endValue` on the end of the `road`
+     *
+     * @param {Object} obj The object to navigate
+     * @param {Array|String} road Either an array of property names or a String of dot separated property names
+     * @param {*} endValue The value to set on the end of the road
+     * @param {boolean} setOwn If true, it makes sure that the navigation never travels in an inherited Object
+     * @returns {*} The `endValue`
+     */
+    navigate.set = function (obj, road, endValue, setOwn) {
+        navigate(obj, road, function (value, key, i, road) {
+            if (i === road.length - 1) {
+                if (isObject(value)) {
+                    if (isObject(endValue) || isFn(endValue)) {
+                        this[key] = endValue;
+                        merge(this[key], value);
+                    } else {
+                        this[key].valueOf = function () {
+                            return endValue;
+                        };
+                    }
+                } else {
+                    this[key] = endValue;
+                }
+            } else {
+                var typeofValue = (value !== null ? typeof value : "null");
+                completeRoad[typeofValue].call(this, value, key, setOwn, value, i, road);
+            }
+
+            if (this.$$boundChildren && isObject(this[key])) {
+                forEach(this.$$boundChildren, function (child) {
+                    if (!child.hasOwnProperty(key)){
+                        child[key] = boundInherit(this[key]);
+                    }
+                }, this);
+            }
+        });
+        return endValue;
+    };
+
+    /**
+     * Navigate `obj` on the `road` and sets `endValue` on the end of the `road`,
+     * making sure it never travels in an inherited Object
+     *
+     * @param {Object} obj The object to navigate
+     * @param {Array|String} road Either an array of property names or a String of dot separated property names
+     * @param {*} endValue The value to set on the end of the road
+     * @returns {*} The `endValue`
+     */
+    navigate.setOwn = function (obj, road, endValue) {
+        return navigate.set(obj, road, endValue, true);
+    };
+
+    /**
+     * Navigate `obj` on the `road` and returns the value at the end of the `road`
+     *
+     * @param {Object} obj The object to navigate
+     * @param {Array|String} road Either an array of property names or a String of dot separated property names
+     * @returns {*} The value at the end of the road
+     */
+    navigate.get = function (obj, road) {
+        var endValue = null;
+
+        navigate(obj, road, function (value, key, i, road) {
+            if (i === road.length - 1) {
+                endValue = value;
+            }
+        });
+
+        return endValue && endValue.valueOf();
+    };
+
+    var ot = {
+        globalObj: globalObj,
+        isArray: isArray,
+        isObject: isObject,
+        isFn: isFn,
+        isUndefined: isUndefined,
+        isEmptyObject: isEmptyObject,
+        toArray: toArray,
+        cleanArray: cleanArray,
+        noop: noop,
+        result: result,
+
+        forEach: forEach,
+
+        merge: merge,
+        deepMerge: deepMerge, mergeRecursively: deepMerge, recursiveMerge: deepMerge,
+        softMerge: softMerge, mergeSoftly: softMerge,
+
+        inherit: inherit,
+        deepInherit: deepInherit, recursiveInherit: deepInherit, inheritRecursively: deepInherit,
+        boundInherit: boundInherit, bindInherit: boundInherit,
+        unbindInherit: unbindInherit,
+
+        navigate: navigate
+    };
+
+    if (typeof module === "object" && module && isObject(module.exports)) {
+        module.exports = ot;
+    } else {
+        if (typeof define === "function" && define.amd) {
+            define("ot", [], function(){
+                return ot;
+            });
+        }
+    }
 
     return ot;
 }());
-
-var baseConfig = {
-    constructorName: "init",
-    defaultMethod: "Public",
-    superName: "$Super"
-};
 
 function EventEmitter() {
     this.listeners = null;
@@ -525,31 +552,36 @@ function EventEmitter() {
 
 EventEmitter.prototype = {
     on: function (event, listener, context) {
-        var info = { listener: listener, context: context };
-        if (!this.listeners) this.listeners = {};
-
-        if (!this.listeners[event]) {
-            this.listeners[event] = [info];
-        } else {
-            this.listeners[event].push(info);
+        if (ot.isObject(event)) {
+            context = listener;
+            listener = event;
+            ot.forEach(listener, function (listener, event) {
+                this.on(event, listener, context);
+            }, this);
+            return;
         }
+        var info = { listener: listener, context: context || this };
+        if (!this.listeners) this.listeners = {};
+        if (!this.listeners[event]) this.listeners[event] = [];
+
+        this.listeners[event].push(info);
         return this;
     },
     once: function (event, listener, context) {
-        function realListener() {
+        context = context || this;
+        function onceListener() {
             listener.apply(context, arguments);
-            this.off(event, realListener);
+            this.off(event, onceListener);
         }
-        this.on(event, realListener, this);
+        this.on(event, onceListener, this);
         return this;
     },
     off: function (event, listener) {
         if (this.listeners && this.listeners[event]) {
             var listeners = this.listeners[event];
-            for (var i = 0, ii = listeners.length; i < ii; i++) {
+            for (var i = listeners.length-1; i >= 0; i--) {
                 if (listeners[i].listener === listener) {
                     listeners.splice(i, 1);
-                    break;
                 }
             }
         }
@@ -563,10 +595,11 @@ EventEmitter.prototype = {
         }
         return this;
     },
-    emit: function (event) {
+    emit: function (event, args) {
         if (this.listeners && this.listeners[event]) {
-            var listeners = this.listeners[event], args = ot.toArray(arguments).slice(1);
-            ot.forEach(listeners, function (listenerInfo) {
+            var listeners = this.listeners[event];
+            // we slice in case the listener array gets changed while looping
+            ot.forEach(listeners.slice(), function (listenerInfo) {
                 listenerInfo.listener.apply(listenerInfo.context, args);
             });
         }
@@ -578,669 +611,320 @@ EventEmitter.prototype.addListener = EventEmitter.prototype.on;
 EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
 EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
 
-function BaseClass(args) {
-    args = args.isParams ? args : ot.toArray(arguments);
-    if (!(this instanceof BaseClass)) {
-        args.isParams = true;
-        return new BaseClass(args);
-    }
-
-    var $Class = this.$Class = this;
-    this.$ClassDefiner = BaseClass;
-
-    ot.forEach(BaseClass.toInherit, function (value, key) {
-        this[key] = ot.recursiveInherit(value, null, function (obj) {
-            obj.$Class = $Class;
-        });
-    }, this);
-
-    this.params = this.handleParams(args);
-    this.name = this.params.name || "Anonymous";
-    this.components = [];
-
-    this.classConstructor = this.createClassConstructor();
-
-    this.ClassPluginsFirst = new PluginList(null, this);
-    this.ClassPluginsLast = new PluginList(null, this);
-    this.queuedComponentPlugins = new PluginList(false, this);
-
-    ot.forEach(this.$ClassDefiner.$$queuedPlugins, function (queuedPlugin) {
-        queuedPlugin.plugin.apply(this, queuedPlugin.args);
-    }, this);
-
-    addExport(this.classConstructor, this.$ClassDefiner);
-    addExport(ot.globalObj, this.$ClassDefiner);
-    if (this.params.definition) {
-        this.params.definition.call(this.classConstructor);
-        this.End();
-    }
-
-    return this.classConstructor;
-}
-ot.merge(BaseClass, {
-    EventEmitter: EventEmitter,
-    valuesToExport: {
-        Config: exportClassFn("Config"),
-        End: exportClassFn("End")
-    },
-    config: baseConfig,
-    toInherit: {
-        config: baseConfig
-    },
-    Config: function (config) {
-        ot.deepMerge(this.config, config);
-    },
-    $$queuedPlugins: []
-});
-
-BaseClass.prototype = {
-    Config: BaseClass.Config,
-    End: function () {
-        removeExport(this.classConstructor, this.$ClassDefiner);
-        removeExport(ot.globalObj, this.$ClassDefiner);
-        var infoArgs = [
-            {
-                $Class: this.$Class
+// having the classConstructor name be `name`
+// helps with debugging a lot
+function createDynamicNameFn(name, toCall) {
+    var fn;
+    if (!name || isCspOn()) {
+        fn = function () {
+            if (this instanceof fn) {
+                return toCall.asConstructor.apply(this, ot.toArray(arguments));
+            } else {
+                return toCall.asFunction.apply(this, ot.toArray(arguments));
             }
-        ];
-
-        this.ClassPluginsFirst.execute("onDefinition", infoArgs);
-        ot.forEach(this.components, function (component) {
-            component.pluginList.execute("onDefinition", [
-                ot.inherit(infoArgs[0], {
-                    component: component
-                })
-            ]);
-        });
-        this.ClassPluginsLast.execute("onDefinition", infoArgs);
-    },
-    addComponent: function (component) {
-        this.components.push(component);
-    },
-    createClassConstructor: function () {
+        };
+    } else {
         /*jshint evil:true */
-        var classConstructor = new Function("$Class", "toArray",
+        fn = new Function("toCall", "toArray",
             "" +
-                "function " + this.name + "(){ " +
-                "    if(this instanceof " + this.name + ") {" +
-                "        return $Class.onClassConstructorCall(this, toArray(arguments)); " +
+                "function " + name + "(){ " +
+                "    if(this instanceof " + name + ") {" +
+                "        return toCall.asConstructor.apply(this, toArray(arguments)); " +
                 "    } else {" +
-                "        return $Class.onClassFunctionCall(toArray(arguments))" +
+                "        return toCall.asFunction.apply(this, toArray(arguments));" +
                 "    }" +
                 "} " +
-                "return " + this.name + ";")(this, ot.toArray);
-
-        classConstructor.$Class = this;
-        classConstructor.prototype.$Class = this;
-        return classConstructor;
-    },
-    onClassConstructorCall: function (instance, args) {
-        var infoArgs = [
-            {
-                $Class: this.$Class,
-                instance: instance
-            }
-        ];
-
-        this.ClassPluginsFirst.execute("onInstanceCreation", infoArgs);
-        ot.forEach(this.components, function (component) {
-            component.pluginList.execute("onInstanceCreation", [
-                ot.inherit(infoArgs[0], {
-                    component: component
-                })
-            ]);
-        });
-        this.ClassPluginsLast.execute("onInstanceCreation", infoArgs);
-    },
-    onClassFunctionCall: function (args) {
-
+                "return " + name + ";")(toCall, ot.toArray);
     }
-};
 
-function Component($Class, mainPlugin, details) {
-    EventEmitter.call(this);
-    this.mainPlugin = mainPlugin;
-    this.$Class = $Class;
-    this.pluginList = new PluginList(this, $Class);
-    this.details = details || {};
+    return fn;
 }
 
-Component.prototype = ot.inherit(EventEmitter.prototype, {
-    set: function(name, value) {
-        var oldValue = this.details[name];
-        this.details[name] = value;
-
-        this.emit("change:" + name, value, oldValue, this);
-        this.emit("change", value, oldValue, this);
-    }
-});
-
-function Plugin(name, info, $ClassDefiner) {
-    this.name = name;
-    this.info = info;
-    this.$ClassDefiner = $ClassDefiner;
+function isCspOn() {
+    return !!ot.navigate.get(ot.globalObj, 'document.securityPolicy.isActive');
 }
-
-Plugin.prototype = {
-    invoke: function ($Class, args, callApply) {
-        var invokeValue = this.onInvoke.apply(this, [
-            {
-                $Class: $Class,
-                args: args
-            }
-        ].concat(args));
-
-        if (callApply !== false) {
-            this.apply($Class, args);
-        }
-
-        return invokeValue;
-    },
-    apply: function ($Class, args) {
-        var continueApply = this.onApply.apply(this, [
-            {
-                $Class: $Class,
-                args: args
-            }
-        ].concat(args));
-
-        if (continueApply !== false) {
-            if (ot.isObject(this.info.level)) {
-                ot.forEach(this.info.level, function (value, level) {
-                    Plugin.levels[level](this, $Class, args);
-                }, this);
-            } else {
-                Plugin.levels[this.info.level](this, $Class, args);
-            }
-        }
-        return continueApply;
-    },
-    getLevelObject: function (info) {
-        if (ot.isObject(this.info.level)) {
-            if ("component" in info) {
-                if (info.component.mainPlugin === this) {
-                    return this.info.level.OwnComponent;
-                } else {
-                    return this.info.level.Component;
-                }
-            } else {
-                return this.info.level.Class;
-            }
-        } else {
-            return this.info;
-        }
-    },
-    allowMultiple: function () {
-        return !!this.info.multiple;
-    },
-    onDefinition: generateEventHandler("onDefinition"),
-    onInstanceCreation: generateEventHandler("onInstanceCreation"),
-    onInvoke: function () {
-        return ot.result(this.info, "onInvoke", arguments);
-    },
-    onApply: function () {
-        return ot.result(this.info, "onApply", arguments);
-    },
-    getInfo: function (level, property, pluginArgs, $Class) {
-        var args = [
-            {
-                $Class: $Class,
-                args: pluginArgs
-            }
-        ].concat(pluginArgs);
-
-        if (ot.isObject(this.info.level)) {
-            if (level in this.info.level) {
-                return ot.result(this.info.level[level], property, args);
-            }
-        } else if (this.info.level === level) {
-            return ot.result(this.info, property, args);
-        }
-        return null;
-    }
-};
-
-Plugin.priorities = {
-    "high": 10,
-    "medium": 20,
-    "low": 30,
-    "OwnComponent": -10000, // TODO implement this
-    "default": 30
-};
-
-Plugin.levels = {
-    Component: function (plugin, $Class, args) {
-        var position = plugin.getInfo("Component", "position", args, $Class);
-        switch (position) {
-            case "before":
-                $Class.queuedComponentPlugins.addPlugin(plugin, args);
-                break;
-            case "after":
-                var lastComponent = $Class.components[$Class.components.length - 1];
-                if (lastComponent) {
-                    lastComponent.pluginList.addPlugin(plugin, args);
-                }
-                break;
-            default:
-                throw "A Component level plugin does not have a good " +
-                    "`position: 'before'|'after'` property. Plugin: " + plugin.name;
-        }
-    },
-    Class: function (plugin, $Class, args) {
-        var execute = plugin.getInfo("Class", "execute", args, $Class);
-        switch (execute) {
-            case "first":
-                $Class.ClassPluginsFirst.addPlugin(plugin, args);
-                break;
-            case "last":
-                $Class.ClassPluginsLast.addPlugin(plugin, args);
-                break;
-            case "both":
-                $Class.ClassPluginsFirst.addPlugin(plugin, args);
-                $Class.ClassPluginsLast.addPlugin(plugin, args);
-                break;
-            default:
-                throw "A Class level plugin does not have a good `" +
-                    "execute: 'first'|'last'` property. Plugin: " + plugin.name;
-        }
-    },
-    OwnComponent: function (plugin, $Class, args) {
-        var componentDetails = plugin.getInfo("OwnComponent", "component", args, $Class),
-            component = new Component($Class, plugin, componentDetails);
-
-        component.pluginList.addPlugin(plugin, args);
-        $Class.addComponent(component);
-
-        component.pluginList.addPlugins($Class.queuedComponentPlugins);
-        $Class.queuedComponentPlugins.reset();
-    }
-};
-
-function generateEventHandler(name) {
-    return function (info) {
-        var continueExec, levelObj = this.getLevelObject(info);
-        if (name in this.info) {
-            continueExec = ot.result(this.info, name, arguments);
-        }
-        if (continueExec !== false && name in levelObj) {
-            continueExec = ot.result(levelObj, name, arguments);
-        }
-
-        return continueExec;
-    };
-}
-
-function PluginList(component, $Class) {
-    EventEmitter.call(this);
-    this.component = component;
-    this.plugins = {};
-    this.$Class = $Class;
-    this.$ClassDefiner = $Class.$ClassDefiner;
-    this.order = null;
-}
-
-PluginList.prototype = ot.inherit(EventEmitter.prototype, {
-    reset: function () {
-        this.plugins = {};
-        this.order = null;
-    },
-    addPlugin: function (plugin, args) {
-        if (plugin.name in this.plugins && plugin.allowMultiple()) {
-            if (this.plugins[plugin.name].multiple) {
-                this.plugins[plugin.name].push(args);
-            } else {
-                this.plugins[plugin.name] = [this.plugins[plugin.name], args];
-                this.plugins[plugin.name].multiple = true;
-            }
-        } else {
-            this.plugins[plugin.name] = args;
-        }
-    },
-    addPlugins: function (pluginsObject) {
-        if (pluginsObject instanceof  PluginList) {
-            this.addPlugins(pluginsObject.plugins);
-        } else {
-            var registeredPlugins = this.$ClassDefiner.registeredPlugins;
-            ot.forEach(pluginsObject, function (args, name) {
-                this.addPlugin(registeredPlugins[name], args);
-            }, this);
-        }
-    },
-    execute: function (on, infoArgs) {
-        var regPlugins = this.$ClassDefiner.registeredPlugins;
-        if (!this.order) this.refreshOrder();
-
-        this.emit("beforeExec", on, infoArgs, this);
-        for (var i = 0; i < this.order.length; i++) {
-            var keepPlugin,
-                name = this.order[i],
-                args = this.plugins[name];
-
-            keepPlugin = this.executePlugin(regPlugins[name], on, infoArgs, args);
-            if (keepPlugin === false) {
-                this.order.splice(i, 1);
-                delete this.plugins[name];
-                i--;
-            }
-        }
-        delete infoArgs[0].args;
-        this.emit("afterExec", on, infoArgs, this);
-    },
-    executePlugin: function (plugin, on, infoArgs, args) {
-        var keepPlugin;
-        if (args.multiple) {
-            for (var i = 0; i < args.length; i++) {
-                infoArgs[0].args = args[i];
-                keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args[i]));
-                if (keepPlugin === false) {
-                    args.splice(i, 1);
-                    i--;
-                }
-            }
-            return !!args.length;
-        } else {
-            infoArgs[0].args = args;
-            keepPlugin = plugin[on].apply(plugin, infoArgs.concat(args));
-            return keepPlugin;
-        }
-    },
-    refreshOrder: function () {
-        var order = [],
-            plugins = this.plugins,
-            registeredPlugins = this.$ClassDefiner.registeredPlugins;
-
-        for (var key in plugins) {
-            if (key in registeredPlugins) {
-                order.push(key);
-            }
-        }
-
-        order.sort(function (a, b) {
-            return registeredPlugins[a].priority - registeredPlugins[b].priority;
-        });
-
-        return this.order = order;
-    }
-});
-
-BaseClass.registeredPlugins = {};
-BaseClass.addPlugin = function addPlugin(name, info) {
-    if (ot.isObject(name)) {
-        info = name;
-        name = info.name;
-    } else {
-        info.name = name;
-    }
-    var $ClassDefiner = this;
-
-    ot.softMerge(info, {
-        level: "Component",
-        priority: Plugin.priorities["default"]
-    });
-
-    var plugin = new Plugin(name, info, this);
-
-    if (info.addToInstances !== false) {
-        ot.navigate.setOwn(this.prototype, name, function () {
-            var invokeValue = plugin.invoke(this.$Class, ot.toArray(arguments));
-            return ot.isUndefined(invokeValue) ? this.$Class : invokeValue;
-        });
-
-        if (name.indexOf(".") !== -1) {
-            var firstProp = name.split(".")[0];
-            this.toInherit[firstProp] = this.prototype[firstProp];
-        }
-    }
-
-    if (info.exportPlugin !== false) {
-        ot.navigate.setOwn(this.valuesToExport, name, exportClassFn(name));
-    }
-
-    if (info.globalize === true) {
-        ot.navigate.setOwn(ot.globalObj, name, function () {
-            var args = ot.toArray(arguments),
-                invokeValue = plugin.invoke(null, args, false);
-
-            $ClassDefiner.$$queuedPlugins.push({plugin: plugin, args: args});
-            return invokeValue;
-        });
-    }
-
-    this.registeredPlugins[name] = plugin;
-    return this;
-};
-
-var currentlyBuilding = [];
 
 function exportClassFn(road) {
-    if (road.indexOf(".") !== -1) {
-        return function () {
-            var $Class = this.$Class || currentlyBuilding[0];
-            var fn = ot.navigate.get($Class, road);
-            if (ot.isFn(fn)) {
-                var val = fn.apply($Class, arguments);
-                return val === $Class ? $Class.classConstructor : val;
-            } else {
-                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
-            }
-        };
+    var getFn;
+    if (ot.isFn(road)) {
+        getFn = function () { return road; };
     } else {
-        return function () {
-            var $Class = this.$Class || currentlyBuilding[0];
-            if (ot.isFn($Class[road])) {
-                var val = $Class[road].apply($Class, arguments);
-                return val === $Class ? $Class.classConstructor : val;
+        if (road.indexOf(".") === -1) {
+            getFn = function ($class) { return $class[road]; };
+        } else {
+            getFn = function ($class) { return ot.navigate.get($class, road); };
+        }
+    }
+
+    exportedFn.valueOf = function () {
+        return this() || exportedFn;
+    };
+    return exportedFn;
+    function exportedFn() {
+        var $class = this.$class || currentlyBuilding[0];
+        if ($class instanceof BaseClass) {
+            var fn = getFn($class);
+            if (ot.isFn(fn)) {
+                var val = fn.call($class, ot.toArray(arguments));
+                return val === $class ? $class.classConstructor : val;
             } else {
-                throw "The method '" + road + "' does not exist on Class: " + $Class.name;
+                throw "The method '" + road + "' does not exist on Class: " + $class.name;
             }
-        };
+        }
     }
 }
 
-function addExport(exportTo, $ClassDefiner) {
-    var valuesToExport = $ClassDefiner.valuesToExport,
-        oldValues = exportTo.$$oldValues = {};
-    ot.forEach(valuesToExport, function (value, key) {
-        if (exportTo.hasOwnProperty(key)) {
-            oldValues[key] = exportTo[key];
-        }
-        exportTo[key] = value;
-    });
-    if (exportTo.$Class instanceof BaseClass) {
-        currentlyBuilding.push(exportTo.$Class);
-    }
-}
-
-function removeExport(exportedTo, $ClassDefiner) {
-    var valuesToExport = $ClassDefiner.valuesToExport;
-    if (exportedTo.$Class instanceof BaseClass) {
-        if (currentlyBuilding[0] === exportedTo.$Class) {
-            currentlyBuilding.shift();
-        }
-    }
-    if (exportedTo.$$oldValues) {
-        var oldValues = exportedTo.$$oldValues;
-        ot.forEach(valuesToExport, function (value, key) {
-            if (oldValues[key]) {
-                exportedTo[key] = oldValues[key];
+// TODO refactor this
+// Globalize .fnToExport
+var fnToExportHandlers = {
+    beforeDefined: function ($class) {
+        var oldValues = $class.$classDefiner.$$oldGlobalValues = {}; // hold the old global vals
+        ot.forEach($class.$classDefiner.fnToExport, function (val, key) {
+            oldValues[key] = ot.globalObj[key];
+            ot.globalObj[key] = $class.classConstructor[key] = val;
+        }, this, true);
+    },
+    afterDefined: function ($class) {
+        var oldValues = $class.$classDefiner.$$oldGlobalValues;
+        ot.forEach(oldValues, function (oldVal, key) {
+            delete $class.classConstructor[key];
+            if (ot.isUndefined(oldVal)) {
+                delete ot.globalObj[key];
             } else {
-                delete exportedTo[key];
+                ot.globalObj[key] = oldVal;
             }
         });
-        delete exportedTo.$$oldValues;
+        $class.$classDefiner.$$oldGlobalValues = {};
+    }
+};
+
+function addAnnotation(name, info) {
+    this.addDecorator(name, {
+        decorate: function (component) {
+            component.annotations = component.annotations || [];
+            if (ot.isFn(info.annotation)) {
+                var annotation = ot.inherit(info.annotation.prototype),
+                    returnedValue = info.annotation.apply(annotation, ot.toArray(arguments));
+
+                component.annotations.push(
+                    ot.isObject(returnedValue) || ot.isFn(returnedValue) ? returnedValue : annotation);
+            } else {
+                component.annotations.push(info.annotation);
+            }
+        }
+    });
+}
+
+function addClassAnnotation(name, info) {
+    this.addClassDecorator(name, {
+        globalize: info.globalize,
+        decorate: function ($class) {
+            var annotations = $class.annotations;
+            if (ot.isFn(info.annotation)) {
+                var annotation = ot.inherit(info.annotation.prototype),
+                    returnedValue = info.annotation.apply(annotation, ot.toArray(arguments));
+
+                annotations.push(
+                    ot.isObject(returnedValue) || ot.isFn(returnedValue) ? returnedValue : annotation);
+            } else {
+                annotations.push(info.annotation);
+            }
+        }
+    });
+}
+
+function addClassDecorator(name, info) {
+    var $classDefiner = this;
+    var queuedDecorators = $classDefiner.queuedDecorators;
+    if (info.globalize) {
+        ot.navigate.set(ot.globalObj, name, function () {
+            var args = ot.toArray(arguments);
+            queuedDecorators.push(function ($class) {
+                callDecorator.call($class, args);
+            });
+        });
+        $classDefiner.events.on('destroy', function () {
+            ot.navigate(ot.globalObj, name, function (value, key, i, road) {
+                if (i === road.length - 1) {
+                    delete this[key];
+                    return false;
+                }
+            });
+        });
+    } else {
+        var exportFn = exportClassFn(callDecorator);
+        ot.navigate.set($classDefiner.fnToExport, name, exportFn, true);
+    }
+
+    function callDecorator (args) {
+        info.decorate.apply(info, [this].concat(args));
+
+        if (info.on && !this.$$usedPlugins[name]) {
+            var on = ot.result(info, 'on', [this]);
+            this.on(on, info);
+        }
+        this.$$usedPlugins[name] = true;
     }
 }
 
-ot.merge(BaseClass.prototype, {
-    getOwnComponentBy: function (field, value) {
-        for (var i = 0; i < this.components.length; i++) {
-            if (this.components[i][field] === value) {
-                return this.components[i];
+function addComponent(name, info) {
+    this.addClassDecorator(name, {
+        on: info.on && function ($class) {
+            var on = ot.result(info, 'on', [$class]);
+            $class.on(on, info);
+        },
+        decorate: function ($class) {
+            $class.addComponent(info.createComponent.apply(info, ot.toArray(arguments)));
+        }
+    });
+}
+
+function addDecorator(name, info) {
+
+    this.addClassDecorator(name, {
+        on: info.on && function ($class) {
+            var on = ot.result(info, 'on', [$class]);
+            $class.on(on, info);
+        },
+        decorate: function($class) {
+            var lastComponent, args = ot.toArray(arguments);
+            if (info.after && ot.result(info, 'after', [lastComponent = $class.getLastComponent()].concat(args))) {
+                info.decorate.apply(info, [lastComponent].concat(args));
+            } else {
+                $class.once('newComponent', function (component) {
+                    info.decorate.apply(info, [component].concat(args));
+                }, this);
             }
         }
-        return null;
-    },
-    getComponentBy: function (field, value) {
-        return this.getOwnComponentBy(field, value);
-    },
+    });
+}
 
-    getOwnComponentsBy: function (field, value) {
-        var validComponents = [];
-        for (var i = 0; i < this.components.length; i++) {
-            if (this.components[i][field] === value) {
-                validComponents.push(this.components[i]);
-            }
-        }
-        return validComponents;
-    },
-    getComponentsBy: function (field, value) {
-        return this.getOwnComponentsBy(field, value);
-    },
+var currentlyBuilding = [];
+var BaseClass = createBaseClass();
 
-    //searches in the Class hierarchy
-    getConstructorComponent: function () {
-        return this.getComponentBy("name", this.config.constructorName);
-    },
+function createBaseClass() {
+    var Class = ClassDefinerFactory('BaseClass');
+    Class.addClassDecorator = addClassDecorator;
+    Class.addClassAnnotation = addClassAnnotation;
+    Class.addComponent = addComponent;
+    Class.addDecorator = addDecorator;
+    Class.addAnnotation = addAnnotation;
 
-    getConstructorName: function () {
-        var component = this.getConstructorComponent();
+    Class.eventListeners.push(fnToExportHandlers);
+    Class.eventListeners.push({
+        beforeDefined: function ($class) {
+            var queuedDecorators = $class.$classDefiner.queuedDecorators;
+            ot.forEach(queuedDecorators, function runDecorator(decorator) {
+                if (ot.isArray(decorator)) {
+                    ot.forEach(decorator, runDecorator);
+                    decorator.length = 0;
+                } else {
+                    decorator($class);
+                }
 
-        return component ? component.name : null;
-    }
-});
-
-BaseClass.prototype.handleParams = function (args) {
-    var params = {
-        name: null,
-        classConfig: null,
-        definition: null
-    };
-
-    ot.forEach(args, function (value) {
-        switch (typeof value) {
-            case "string":
-                params.name = value;
-                break;
-            case "object":
-                params.classConfig = value;
-                break;
-            case "function":
-                params.definition = value;
-                break;
+            });
+            queuedDecorators.length = 0;
         }
     });
 
-    if (params.classConfig !== null && params.definition === null) {
-        for (var key in params.classConfig) {
-            if (params.classConfig.hasOwnProperty(key) && !(key in this.config)) {
-                params.definition = params.classConfig;
-                params.classConfig = null;
-                break;
-            }
-        }
-    }
+    return Class;
+}
 
-    if (ot.isObject(params.definition)) {
-        params.definition = (function (definition) {
-            return function () {
-                ot.forEach(definition, function (value, key) {
-                    if (ot.isFn(this[key])) {
-                        this[key](value);
-                    } else if (key.indexOf(".") !== -1) {
-                        var fn = ot.navigate.get(this, key);
-                        if (ot.isFn(fn)) {
-                            fn(value);
-                        }
-                    } else {
-                        this[this.$Class.config.defaultMethod](key, value);
-                    }
-                }, this);
-            };
-        }(params.definition));
-    }
+function ClassDefinerFactory(definerName, parent) {
+    var ClassDefiner = createDynamicNameFn(definerName, {
+        asConstructor: handleNewClass,
+        asFunction: handleNewClass
+    });
 
-    return params;
-};
-
-BaseClass.addPlugin("Constructor", {
-    onApply: function(info, fn){
-        info.$Class.Public(info.$Class.config.constructorName, fn);
-        return false;
-    }
-});
-
-BaseClass.addPlugin("Extends", {
-    level: {
-        "Class": {
-            execute: "first",
-            priority: -100,
-            onDefinition: function (info) {
-                var extendedClass = info.$Class.extends;
-                if (extendedClass) {
-                    // TODO normalize `constructor`
-                    info.$Class.classConstructor.prototype = ot.inherit(
-                        extendedClass.classConstructor.prototype,
-                        info.$Class.classConstructor.prototype
-                    );
-
-                    info.$Class.classConstructor.prototype[info.$Class.config.superName]
-                        = extendedClass.classConstructor.prototype;
-                }
-                return false;
-            }
+    ot.merge(ClassDefiner, parent || {
+        ot: ot,
+        EventEmitter: EventEmitter,
+        child: function (name) {
+            var childClassDefiner = ClassDefinerFactory(name, this);
+            this.events.emit('newChild', [childClassDefiner]);
+            return childClassDefiner;
         },
-        "OwnComponent": {
-            component: function (info) {
-                return {value: info.$Class.extends};
-            },
-            onDefinition: false
-        }
-    },
-    onApply: function (info, object) {
-        // TODO string Extends
-        if (object && object.$Class) {
-            object = object.$Class;
-        } else {
-            throw "a Class was not given to .Extends()";
-        }
-
-        info.$Class.extends = object;
-    }
-});
-
-BaseClass.addPlugin("Public", {
-    level: "OwnComponent",
-    component: function (info, name, value) {
-        return {name: name, value: value};
-    },
-    onApply: function (info, name, value) {
-        if (ot.isFn(name)) {
-            value = name;
-            name = value.name;
-        }
-        info.args[0] = name;
-        info.args[1] = value || null;
-    },
-    onDefinition: function (info, name, value) {
-        var prototype = info.$Class.classConstructor.prototype;
-
-        function updatePrototype(value) {
-            if (ot.isFn(value)) {
-                prototype[name] = value
-            } else {
-                delete prototype[name];
+        destroy: function () {
+            if (parent) {
+                ot.unbindInherit(this.prototype);
+                ot.unbindInherit(this.fnToExport);
             }
+            this.events.emit('destroy');
         }
+    });
 
-        updatePrototype(value);
-        info.component.on("change:value", updatePrototype);
-    },
-    onInstanceCreation: function (info, name, value) {
-        if (!ot.isFn(value)) {
-            info.instance[name] = value;
-        }
+    if (!parent) {
+        ClassDefiner.fnToExport = {};
+        ClassDefiner.eventListeners = [];
+        ClassDefiner.queuedDecorators = [];
+        ClassDefiner.prototype = ot.inherit(EventEmitter.prototype, {
+            addComponent: function (component) {
+                this.components.push(component);
+                this.emit('newComponent', [component, this]);
+            },
+            getLastComponent: function () {
+                return this.components[this.components.length-1];
+            }
+        });
+    } else {
+        ClassDefiner.fnToExport = ot.boundInherit(parent.fnToExport);
+        ClassDefiner.eventListeners = [parent.eventListeners];
+        ClassDefiner.queuedDecorators = [parent.queuedDecorators];
+        ClassDefiner.prototype = ot.boundInherit(parent.prototype);
     }
-});
+
+    ClassDefiner.events = new EventEmitter();
+
+    ClassDefiner.prototype.constructor = ClassDefiner;
+
+    return ClassDefiner;
+
+    function handleNewClass(name, definitionFn) {
+        if (!(this instanceof ClassDefiner)) {
+            return new ClassDefiner(name, definitionFn);
+        }
+        EventEmitter.call(this);
+
+        var Class = this;
+
+        this.$classDefiner = ClassDefiner;
+
+        this.name = name;
+        this.classConstructor = createDynamicNameFn(name, {
+            asConstructor: function () {
+                Class.emit('newInstance', [this, ot.toArray(arguments)]);
+            },
+            asFunction: ot.noop
+        });
+        this.classConstructor.$class = this;
+        this.classConstructor.prototype.$class = this;
+
+        this.$$usedPlugins = {};
+        this.components = [];
+        this.annotations = [];
+
+        ClassDefiner.events.emit('newClass', [this]);
+
+        // add listeners
+        ot.forEach(ClassDefiner.eventListeners, function addListeners(listeners) {
+            if (ot.isArray(listeners)) {
+                ot.forEach(listeners, addListeners, this);
+            } else {
+                this.on(listeners);
+            }
+        }, this);
+
+        this.emit('beforeDefined', [this]);
+
+        currentlyBuilding.unshift(this);
+        definitionFn.call(this.classConstructor);
+        currentlyBuilding.shift();
+
+        this.emit('defined', [this]);
+        this.emit('afterDefined', [this]);
+        return this.classConstructor;
+    }
+}
 
     return BaseClass;
 }());

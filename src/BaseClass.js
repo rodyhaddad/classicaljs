@@ -91,7 +91,7 @@ function ClassDefinerFactory(definerName, parent) {
         this.name = name;
         this.classConstructor = createDynamicNameFn(name, {
             asConstructor: function () {
-                Class.emit('newInstance', [this, ot.toArray(arguments)]);
+                Class.emit('newInstance', [Class, this, ot.toArray(arguments)]);
             },
             asFunction: ot.noop
         });
