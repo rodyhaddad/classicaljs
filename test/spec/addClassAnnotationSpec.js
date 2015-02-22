@@ -35,6 +35,7 @@ describe('addClassAnnotation', function () {
             expect(aClass.$class.annotations.length).toBe(1);
             expect(aClass.$class.annotations[0] instanceof Annotation).toBe(true);
         });
+        });
 
         it('should handle the instantiated annotation function returning an object or a function', function () {
             function Annotation1() {return {}}
@@ -44,25 +45,24 @@ describe('addClassAnnotation', function () {
             function Annotation2() {return ot.noop}
             BaseClass.addClassAnnotation('annotation2', {
                 annotation: Annotation2
-            });
+         });
 
-            var aClass = BaseClass('name', function () {
+var aClass = BaseClass('name', function () {
                 +annotation1();
                 +annotation2();
             });
 
             expect(aClass.$class.annotations.length).toBe(2);
-            expect(aClass.$class.annotations[0]).toEqual({});
-            expect(aClass.$class.annotations[1]).toEqual(ot.noop);
+ //             expect(aClass.$class.annotations[0]).toEqual({});
+	expect(aClass.$class.annotations[1]).toEqual(ot.noop);
         });
     });
-
-    it('should allow nested Annotations', function () {
+     it('should allow nested Annotations', function () {
         var info = {annotation: jasmine.createSpy('annotation')};
 
         BaseClass.addClassAnnotation('annotation', info);
         BaseClass.addClassAnnotation('annotation.A', info);
-        BaseClass.addClassAnnotation('annotation.A.B', info);
+             BaseClass.addClassAnnotation('annotation.A.B', info);
         BaseClass.addClassAnnotation('annotation.A.B.C.D.E', info);
         BaseClass.addClassAnnotation('annotation.A.B.C.F', info);
 
@@ -74,7 +74,7 @@ describe('addClassAnnotation', function () {
             +annotation.A.B.C.D.E();
             +annotation.A.B.C.F();
         });
-
+//   
         expect(info.annotation.calls.count()).toBe(5);
     });
 
@@ -97,7 +97,7 @@ describe('addClassAnnotation', function () {
             var info = {annotation: jasmine.createSpy('annotation')};
             BaseClass.addClassAnnotation('annotation', info);
 
-            var aClass, aClass2;
+           var aClass, aClass2;
             var aClass = BaseClass('name1', function () {
                 +annotation();
                 aClass2 = BaseClass('name2', function () {
@@ -107,7 +107,7 @@ describe('addClassAnnotation', function () {
 
             expect(info.annotation.calls.argsFor(0)).toEqual([aClass.$class]);
             expect(info.annotation.calls.argsFor(1)).toEqual([aClass2.$class]);
-        });
+    //           });
 
     });
 
@@ -165,7 +165,7 @@ describe('addClassAnnotation', function () {
             +childAnn();
             aClass = BaseClass('name', ot.noop);
 
-            expect(infoParent.annotation).toHaveBeenCalledWith(aClass.$class);
+					expect(infoParent.annotation).toHaveBeenCalledWith(aClass.$class);
             expect(infoChild.annotation).not.toHaveBeenCalled();
 
             aClass = childClass('name', ot.noop);
@@ -178,9 +178,9 @@ describe('addClassAnnotation', function () {
             // on different branch
             +parentAnn();
             +childAnn();
-            aClass = diffBranchClass('name', ot.noop);
+ aClass = diffBranchClass('name', ot.noop);
 
-            expect(infoParent.annotation).toHaveBeenCalledWith(aClass.$class);
+                expect(infoParent.annotation).toHaveBeenCalledWith(aClass.$class);
             expect(infoChild.annotation).not.toHaveBeenCalled();
 
             aClass = childClass('name', ot.noop);
@@ -191,8 +191,7 @@ describe('addClassAnnotation', function () {
         });
 
     });
-
-    it('should temporarily add the Annotation to the resulting class', function () {
+                     it('should temporarily add the Annotation to the resulting class', function () {
         var info = {annotation: jasmine.createSpy('annotation')};
         BaseClass.addClassAnnotation('annotation', info);
 
@@ -203,6 +202,7 @@ describe('addClassAnnotation', function () {
         expect(aClass.annotation).toBeUndefined();
 
         expect(info.annotation).toHaveBeenCalledWith(aClass.$class, 1, true);
-    });
+                });
+
 
 });

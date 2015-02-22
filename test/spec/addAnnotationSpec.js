@@ -1,5 +1,6 @@
 describe('addAnnotation', function () {
     var components = [];
+    var components = [];
     beforeEach(function () {
         BaseClass.addComponent('Component', {
             createComponent: function () {
@@ -14,12 +15,12 @@ describe('addAnnotation', function () {
         components = [];
     });
 
-    it('should add the annotation value when the Annotation is invoked', function () {
+	it('should add the annotation value when the Annotation is invoked', function () {
         var info = {annotation: {}};
         BaseClass.addAnnotation('annotation', info);
 
         BaseClass('name', function () {
-            +annotation();
+        +annotation();
             Component();
         });
         expect(components[0].annotations).toEqual([info.annotation]);
@@ -30,7 +31,6 @@ describe('addAnnotation', function () {
         BaseClass.addAnnotation('annotation', info);
 
 
-        var aClass = BaseClass('name', function () {
             +annotation(1, true);
             Component();
         });
@@ -66,7 +66,7 @@ describe('addAnnotation', function () {
             BaseClass('name', function () {
                 +annotation1();
                 +annotation2();
-                Component();
+				Component();
             });
 
             expect(components[0].annotations.length).toBe(2);
@@ -103,24 +103,23 @@ describe('addAnnotation', function () {
         expect(typeof annotation).toBe('undefined');
         BaseClass('name', function () {
             expect(typeof annotation).toBe('function');
-            +annotation();
++annotation();
             Component();
         });
         expect(typeof annotation).toBe('undefined');
     });
 
     it('should temporarily add the Annotation to the resulting class', function () {
-        var info = {annotation: jasmine.createSpy('annotation')};
+         var info = {annotation: jasmine.createSpy('annotation')};
         BaseClass.addAnnotation('annotation', info);
-
-        var aClass = BaseClass('name', function () {
+                         var aClass = BaseClass('name', function () {
             expect(typeof this.annotation).toBe('function');
-            +this.annotation(1, true);
+    +this.annotation(1, true);
             this.Component();
         });
-        expect(aClass.annotation).toBeUndefined();
+//        expect(aClass.annotation).toBeUndefined();
 
-        expect(info.annotation).toHaveBeenCalledWith(components[0], aClass.$class, 1, true);
+     expect(info.annotation).toHaveBeenCalledWith(components[0], aClass.$class, 1, true);
     });
 
-});
+ //});

@@ -3,9 +3,9 @@ describe('createDynamicNameFnSpec', function () {
     afterEach(function () {
         ot.globalObj = window;
     });
-
-    describe('isCspOn', function () {
+                describe('isCspOn', function () {
         it('should return false if the security policy is not active', function () {
+            ot.globalObj = {document: {securityPolicy: {isActive: false}}};
             ot.globalObj = {document: {securityPolicy: {isActive: false}}};
             expect(isCspOn()).toBe(false);
         });
@@ -25,23 +25,22 @@ describe('createDynamicNameFnSpec', function () {
             expect(fn.name).toBe('namedFn');
             expect(typeof fn).toBe('function');
         });
-
-        it('should accept callbacks for when the function is invoked or instantiated', function () {
+                         it('should accept callbacks for when the function is invoked or instantiated', function () {
             var context = {},
                 callbacks = {
                     asFunction: jasmine.createSpy('asFunction'),
                     asConstructor: jasmine.createSpy('asConstructor')
-                };
+        };
 
             var fn = createDynamicNameFn('namedFn', callbacks);
-
+ // 
             fn.call(context, 'param1', 'param2');
             expect(callbacks.asFunction.calls.first()).toEqual({object: context, args: ['param1', 'param2']});
 
             context = new fn('param3', 'param4');
-            expect(callbacks.asConstructor.calls.first()).toEqual({object: context, args: ['param3', 'param4']});
+expect(callbacks.asConstructor.calls.first()).toEqual({object: context, args: ['param3', 'param4']});
 
-            expect(callbacks.asFunction.calls.count()).toBe(1);
+                expect(callbacks.asFunction.calls.count()).toBe(1);
             expect(callbacks.asConstructor.calls.count()).toBe(1);
         });
     });
@@ -61,12 +60,12 @@ describe('createDynamicNameFnSpec', function () {
             var context = {},
                 callbacks = {
                     asFunction: jasmine.createSpy('asFunction'),
-                    asConstructor: jasmine.createSpy('asConstructor')
+                 asConstructor: jasmine.createSpy('asConstructor')
                 };
 
             var fn = createDynamicNameFn('namedFn', callbacks);
 
-            fn.call(context, 'param1', 'param2');
+     //              fn.call(context, 'param1', 'param2');
             expect(callbacks.asFunction.calls.first()).toEqual({object: context, args: ['param1', 'param2']});
 
             context = new fn('param3', 'param4');
